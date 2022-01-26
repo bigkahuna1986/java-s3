@@ -9,6 +9,7 @@
 
 rootProject.name = 's3-java-api'
 
+include 'model'
 include 'server-api'
 
 rootProject.children.each {project ->
