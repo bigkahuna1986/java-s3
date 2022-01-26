@@ -1,0 +1,18 @@
+ext {
+	javaProjects = subprojects
+}
+
+configure([rootProject] + javaProjects) { project ->
+	apply plugin: 'java-library'
+	sourceCompatibility = 11
+	targetCompatibility = 11
+
+	repositories {
+		mavenCentral()	
+	}
+
+}
+
+configure(javaProjects) { project ->
+	apply plugin: 'eclipse'
+}
