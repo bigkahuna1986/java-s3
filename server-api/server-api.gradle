@@ -1,0 +1,30 @@
+
+ext {
+        jerseyVersion = '3.0.3'
+        jettyVersion= '11.0.7'
+}
+
+dependencies {
+
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.33'
+    implementation "org.eclipse.jetty:jetty-server:$jettyVersion"
+  implementation "org.eclipse.jetty:jetty-io:$jettyVersion"
+  implementation "org.eclipse.jetty:jetty-http:$jettyVersion"
+  implementation "org.eclipse.jetty:jetty-util:$jettyVersion"
+  implementation "org.eclipse.jetty:jetty-webapp:$jettyVersion"
+    
+  implementation "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
+  implementation "org.glassfish.jersey.containers:jersey-container-jetty-servlet:$jerseyVersion"
+  implementation "org.glassfish.jersey.containers:jersey-container-jetty-http:$jerseyVersion"
+  implementation "org.glassfish.jersey.media:jersey-media-json-processing:$jerseyVersion"
+  implementation "org.glassfish.jersey.ext:jersey-bean-validation:$jerseyVersion"
+	
+    testImplementation 'junit:junit:4.13'
+}
+
+configurations.all {
+  resolutionStrategy {
+    force 'org.slf4j:slf4j-api:1.7.33'
+  }
+}
+
