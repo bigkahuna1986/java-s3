@@ -39,9 +39,8 @@ public class SignatureFilter implements ContainerRequestFilter {
 
 			// Get request headers
 			// Fetch authorization header
-			final String date = requestContext.getHeaderString(AwsSigV4.X_AMZ_DATE);
 			final String authorization = requestContext.getHeaderString("Authorization");
-			final AwsSigV4 sigv4 = new AwsSigV4(authorization, date);
+			final AwsSigV4 sigv4 = new AwsSigV4(authorization);
 			final User user = ApiPoint.INSTANCE.user(sigv4.accessKeyId());
 			final String actualSignature = CanonicalRequest.calculateV4(requestContext, sigv4.signedHeaders(),
 					sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());

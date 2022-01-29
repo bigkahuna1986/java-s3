@@ -20,12 +20,9 @@ public class AwsSigV4 {
 	private final String _headers;
 	private final String _accessKeyId;
 
-	private final String _XamzDate;
-
-	public AwsSigV4(String authString, String xamzDate) {
+	public AwsSigV4(String authString) {
 		final Matcher matcher = AWS_AUTH4_PATTERN.matcher(Objects.requireNonNull(authString, "auth"));
 		if (matcher.matches()) {
-			_XamzDate = xamzDate;
 			_accessKeyId = matcher.group(1);
 			_date = matcher.group(2);
 			_region = matcher.group(3);

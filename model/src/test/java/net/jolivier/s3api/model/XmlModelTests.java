@@ -42,6 +42,7 @@ public class XmlModelTests {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <T> T read(Class<T> cls, String xml) {
 		JAXBContext jaxbContext;
 		try {

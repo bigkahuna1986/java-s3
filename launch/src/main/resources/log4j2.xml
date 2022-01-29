@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration shutdownHook="disable">
+	<Appenders>
+		<Console name="STDOUT" target="SYSTEM_OUT">
+			<PatternLayout
+				pattern="[%pid] %d{MM/dd HH:mm:ss} [%t] %-5p %c{1} - %m%n" />
+		</Console>
+	</Appenders>
+	<Loggers>
+		<Logger
+			name="org.apache.commons.beanutils.FluentPropertyBeanIntrospector"
+			level="error" />
+
+		<!-- The root logger -->
+		<Root level="info">
+			<AppenderRef ref="STDOUT" />
+		</Root>
+	</Loggers>
+</Configuration>
