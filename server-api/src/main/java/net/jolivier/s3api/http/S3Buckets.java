@@ -7,9 +7,11 @@ import jakarta.ws.rs.HEAD;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Context;
+import net.jolivier.s3api.model.CreateBucketConfiguration;
 
 public class S3Buckets {
-	
+
 	@Path("/{bucket}")
 	@HEAD
 	public void headBucket(@NotNull @PathParam("bucket") String bucket) {
@@ -18,7 +20,7 @@ public class S3Buckets {
 
 	@Path("/{bucket}")
 	@PUT
-	public void createBucket(@NotNull @PathParam("bucket") String bucket) {
+	public void createBucket(@NotNull @PathParam("bucket") String bucket, @Context CreateBucketConfiguration configs) {
 
 	}
 

@@ -6,6 +6,7 @@ ext {
 
 dependencies {
     api(project(":model"))
+    implementation group: 'com.google.guava', name: 'guava', version: '31.0.1-jre'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.33'
     
     implementation "org.eclipse.jetty:jetty-server:$jettyVersion"
