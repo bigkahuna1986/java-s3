@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
-import net.jolivier.s3api.model.DeleteObjectsResult;
+import net.jolivier.s3api.model.DeleteResult;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
@@ -33,7 +33,7 @@ public interface S3Api {
 
 	public boolean deleteObject(String bucket, String key);
 
-	public DeleteObjectsResult deleteObjects(String bucket, DeleteObjectsRequest request);
+	public DeleteResult deleteObjects(String bucket, DeleteObjectsRequest request);
 
 	public String putObject(String bucket, String key, Optional<String> inputMd5, Optional<String> contentType,
 			InputStream data);

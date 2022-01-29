@@ -14,12 +14,14 @@ import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
-import net.jolivier.s3api.model.DeleteObjectsResult;
+import net.jolivier.s3api.model.DeleteResult;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListBucketResult;
@@ -38,8 +40,8 @@ public class S3Objects {
 	@HEAD
 	public Response headObject(@NotNull @PathParam("bucket") String bucket, @NotNull @PathParam("key") String key) {
 		final HeadObjectResult result = ApiPoint.INSTANCE.headObject(bucket, key);
-		return Response.ok().type(result.getContentType()).tag(result.getEtag())
-				.lastModified(Date.from(result.getModified().toInstant())).build();
+		return Response.ok().type(result.contentType()).tag(result.etag())
+				.lastModified(Date.from(result.modified().toInstant())).build();
 	}
 
 	@Path("/{bucket}/{key}")
@@ -53,15 +55,15 @@ public class S3Objects {
 
 	@Path("/{bucket}")
 	@DELETE
-	public DeleteObjectsResult deleteObjects(@NotNull @PathParam("bucket") String bucket,
-			@Context ContainerRequest request) {
+	@Produces(MediaType.APPLICATION_XML)
+	public DeleteResult deleteObjects(@NotNull @PathParam("bucket") String bucket, @Context ContainerRequest request) {
 
 		if (!request.getUriInfo().getQueryParameters().containsKey("delete"))
 			throw new IllegalArgumentException("delete required");
 
 		final DeleteObjectsRequest req = null;
 
-		final DeleteObjectsResult result = ApiPoint.INSTANCE.deleteObjects(bucket, req);
+		final DeleteResult result = ApiPoint.INSTANCE.deleteObjects(bucket, req);
 
 		return result;
 
@@ -82,6 +84,7 @@ public class S3Objects {
 
 	@Path("/{bucket}/{dest}")
 	@PUT
+	@Produces(MediaType.APPLICATION_XML)
 	public CopyObjectResult copyObject(@NotNull @PathParam("bucket") String dstBucket,
 			@NotNull @PathParam("dest") String dstKey, @NotNull @HeaderParam("x-amz-copy-source") String sourceKey) {
 		// Sourcekey is "bucket/key"
@@ -95,6 +98,7 @@ public class S3Objects {
 
 	@Path("/{bucket}")
 	@GET
+	@Produces(MediaType.APPLICATION_XML)
 	/// ?delimiter=Delimiter&encoding-type=EncodingType&marker=Marker&max-keys=MaxKeys&prefix=Prefix
 	public ListBucketResult listObjects(@NotNull @PathParam("bucket") String bucket,
 			@QueryParam("delimiter") String delimiter, @QueryParam("encoding-type") String encodingType,

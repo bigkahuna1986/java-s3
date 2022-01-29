@@ -4,27 +4,33 @@ import java.io.InputStream;
 import java.time.ZonedDateTime;
 
 public class GetObjectResult {
-	
-	String contentType;
-	String etag;
-	ZonedDateTime modified;
-	
-	InputStream data;
+
+	private final String _contentType;
+	private final String _etag;
+	private final ZonedDateTime _modified;
+	private final InputStream _data;
+
+	public GetObjectResult(String contentType, String etag, ZonedDateTime modified, InputStream data) {
+		_contentType = contentType;
+		_etag = etag;
+		_modified = modified;
+		_data = data;
+	}
 
 	public String getContentType() {
-		return contentType;
+		return _contentType;
 	}
 
 	public String getEtag() {
-		return etag;
+		return _etag;
 	}
 
 	public ZonedDateTime getModified() {
-		return modified;
+		return _modified;
 	}
 
 	public InputStream getData() {
-		return data;
+		return _data;
 	}
 
 }

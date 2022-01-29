@@ -2,6 +2,9 @@ package net.jolivier.s3api.http;
 
 import java.lang.reflect.Method;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import jakarta.annotation.security.DenyAll;
 import jakarta.annotation.security.PermitAll;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -16,6 +19,8 @@ import net.jolivier.s3api.model.User;
 
 @Provider
 public class SignatureFilter implements ContainerRequestFilter {
+
+	private static final Logger _logger = LoggerFactory.getLogger(SignatureFilter.class);
 
 	@Context
 	private ResourceInfo resourceInfo;
@@ -39,11 +44,13 @@ public class SignatureFilter implements ContainerRequestFilter {
 			final AwsSigV4 sigv4 = new AwsSigV4(authorization, date);
 			final User user = ApiPoint.INSTANCE.user(sigv4.accessKeyId());
 			final String actualSignature = CanonicalRequest.calculateV4(requestContext, sigv4.signedHeaders(),
-					sigv4.accessKeyId(), user.getSecretAccessKey(), sigv4.region());
+					sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
 			final String expectedSignature = sigv4.signature();
 
-			if (!actualSignature.equals(expectedSignature))
+			if (!actualSignature.equals(expectedSignature)) {
+				_logger.error("exp " + expectedSignature + " act " + actualSignature);
 				throw new RequestFailedException("Invalid AWSV4 signature!");
+			}
 
 		}
 	}

@@ -3,19 +3,25 @@ package net.jolivier.s3api.model;
 import java.time.ZonedDateTime;
 
 public class HeadObjectResult {
-	String contentType;
-	String etag;
-	ZonedDateTime modified;
+	private final String _contentType;
+	private final String _etag;
+	private final ZonedDateTime _modified;
 
-	public String getContentType() {
-		return contentType;
+	public HeadObjectResult(String contentType, String etag, ZonedDateTime modified) {
+		_contentType = contentType;
+		_etag = etag;
+		_modified = modified;
 	}
 
-	public String getEtag() {
-		return etag;
+	public String contentType() {
+		return _contentType;
 	}
 
-	public ZonedDateTime getModified() {
-		return modified;
+	public String etag() {
+		return _etag;
+	}
+
+	public ZonedDateTime modified() {
+		return _modified;
 	}
 }

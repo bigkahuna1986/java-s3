@@ -2,15 +2,20 @@ package net.jolivier.s3api.model;
 
 public class User {
 
-	public String getAccessKeyId() {
-		return accessKeyId;
+	private final String _accessKeyId;
+	private final String _secretAccessKey;
+
+	public User(String accessKeyId, String secretAccessKey) {
+		_accessKeyId = accessKeyId;
+		_secretAccessKey = secretAccessKey;
 	}
 
-	public String getSecretAccessKey() {
-		return secretAccessKey;
+	public String accessKeyId() {
+		return _accessKeyId;
 	}
 
-	String accessKeyId;
-	String secretAccessKey;
+	public String secretAccessKey() {
+		return _secretAccessKey;
+	}
 
 }

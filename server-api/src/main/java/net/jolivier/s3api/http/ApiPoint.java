@@ -7,7 +7,7 @@ import java.util.Optional;
 import net.jolivier.s3api.S3Api;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
-import net.jolivier.s3api.model.DeleteObjectsResult;
+import net.jolivier.s3api.model.DeleteResult;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
@@ -60,7 +60,7 @@ public enum ApiPoint implements S3Api {
 	}
 
 	@Override
-	public DeleteObjectsResult deleteObjects(String bucket, DeleteObjectsRequest request) {
+	public DeleteResult deleteObjects(String bucket, DeleteObjectsRequest request) {
 		return _api.deleteObjects(bucket, request);
 	}
 
