@@ -1,14 +1,17 @@
-package net.jolivier.s3api.http;
+package net.jolivier.s3api.launch;
 
 import java.net.URI;
 
-import org.eclipse.jetty.server.Server;
-import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
+import org.apache.logging.log4j.core.jmx.Server;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.jolivier.s3api.http.S3Buckets;
+import net.jolivier.s3api.http.S3Objects;
+import net.jolivier.s3api.http.SigTerm;
+import net.jolivier.s3api.http.SignatureFilter;
 import net.jolivier.s3api.http.exception.ObjectNotFoundExceptionMapper;
 import net.jolivier.s3api.http.exception.RequestFailedExceptionMapper;
 

@@ -9,8 +9,9 @@
 
 rootProject.name = 's3-java-api'
 
-include 'model'
+include 's3-model'
 include 'server-api'
+include 'server-impl'
 include 'launch'
 
 rootProject.children.each {project ->
