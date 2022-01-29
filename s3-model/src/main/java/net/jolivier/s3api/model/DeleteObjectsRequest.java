@@ -28,11 +28,11 @@ public class DeleteObjectsRequest {
 		return _quiet;
 	}
 
-	public void set_objects(List<ObjectIdentifier> objects) {
+	public void setObjects(List<ObjectIdentifier> objects) {
 		_objects = objects;
 	}
 
-	public void set_quiet(boolean quiet) {
+	public void setQuiet(boolean quiet) {
 		_quiet = quiet;
 	}
 

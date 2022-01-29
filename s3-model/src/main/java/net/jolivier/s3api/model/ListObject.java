@@ -3,6 +3,7 @@ package net.jolivier.s3api.model;
 import java.time.ZonedDateTime;
 
 import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 public class ListObject {
 
@@ -35,6 +36,7 @@ public class ListObject {
 	}
 
 	@XmlElement(name = "LastModified")
+	@XmlJavaTypeAdapter(TimeXmlAdapter.class)
 	public ZonedDateTime getLastModified() {
 		return _lastModified;
 	}

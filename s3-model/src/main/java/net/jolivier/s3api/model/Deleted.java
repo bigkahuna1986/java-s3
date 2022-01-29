@@ -34,7 +34,7 @@ public class Deleted {
 	}
 
 	@XmlElement(name = "Key")
-	public String getKkey() {
+	public String getKey() {
 		return _key;
 	}
 

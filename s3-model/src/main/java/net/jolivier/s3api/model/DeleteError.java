@@ -11,6 +11,9 @@ public class DeleteError {
 	private String _message;
 	private String _versionId;
 
+	public DeleteError() {
+	}
+
 	public DeleteError(String code, String key, String message, String versionId) {
 		_code = code;
 		_key = key;
@@ -19,22 +22,22 @@ public class DeleteError {
 	}
 
 	@XmlElement(name = "Code")
-	public String code() {
+	public String getCode() {
 		return _code;
 	}
 
 	@XmlElement(name = "Key")
-	public String key() {
+	public String getKey() {
 		return _key;
 	}
 
 	@XmlElement(name = "Message")
-	public String message() {
+	public String getMessage() {
 		return _message;
 	}
 
 	@XmlElement(name = "VersionId")
-	public String versionId() {
+	public String getVersionId() {
 		return _versionId;
 	}
 

@@ -2,7 +2,8 @@ package net.jolivier.s3api.launch;
 
 import java.net.URI;
 
-import org.apache.logging.log4j.core.jmx.Server;
+import org.eclipse.jetty.server.Server;
+import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
 import org.slf4j.Logger;
@@ -12,8 +13,8 @@ import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
 import net.jolivier.s3api.http.SigTerm;
 import net.jolivier.s3api.http.SignatureFilter;
-import net.jolivier.s3api.http.exception.ObjectNotFoundExceptionMapper;
-import net.jolivier.s3api.http.exception.RequestFailedExceptionMapper;
+import net.jolivier.s3api.impl.exception.ObjectNotFoundExceptionMapper;
+import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
 
 public class EntryPoint {
 

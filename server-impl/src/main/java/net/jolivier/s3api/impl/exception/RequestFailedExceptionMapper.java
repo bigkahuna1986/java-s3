@@ -1,4 +1,4 @@
-package net.jolivier.s3api.http.exception;
+package net.jolivier.s3api.impl.exception;
 
 import org.eclipse.jetty.http.HttpStatus;
 
