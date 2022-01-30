@@ -1,9 +1,14 @@
 package net.jolivier.s3api.http;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.Optional;
 
 import org.glassfish.jersey.server.ContainerRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.DELETE;
@@ -11,6 +16,7 @@ import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HEAD;
 import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -19,6 +25,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
+import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
@@ -26,9 +36,26 @@ import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListBucketResult;
 
+@Path("/")
 public class S3Objects {
 
-	@Path("/{bucket}/{key}")
+	private static final Logger _logger = LoggerFactory.getLogger(S3Objects.class);
+
+	@SuppressWarnings("unchecked")
+	public static <T> T read(Class<T> cls, InputStream input) {
+
+		try {
+			JAXBContext jaxbContext = JAXBContext.newInstance(cls);
+
+			Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+
+			return (T) jaxbUnmarshaller.unmarshal(new InputStreamReader(input));
+		} catch (JAXBException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Path("/{bucket}/{key: .*}")
 	@GET
 	public Response getObject(@NotNull @PathParam("bucket") String bucket, @NotNull @PathParam("key") String key) {
 		final GetObjectResult result = ApiPoint.INSTANCE.getObject(bucket, key);
@@ -36,7 +63,7 @@ public class S3Objects {
 				.lastModified(Date.from(result.getModified().toInstant())).build();
 	}
 
-	@Path("/{bucket}/{key}")
+	@Path("/{bucket}/{key: .*}")
 	@HEAD
 	public Response headObject(@NotNull @PathParam("bucket") String bucket, @NotNull @PathParam("key") String key) {
 		final HeadObjectResult result = ApiPoint.INSTANCE.headObject(bucket, key);
@@ -44,7 +71,7 @@ public class S3Objects {
 				.lastModified(Date.from(result.modified().toInstant())).build();
 	}
 
-	@Path("/{bucket}/{key}")
+	@Path("/{bucket}/{key: .*}")
 	@DELETE
 	public Response deleteObject(@NotNull @PathParam("bucket") String bucket, @NotNull @PathParam("key") String key,
 			@QueryParam("versionId") String versionId) {
@@ -54,14 +81,14 @@ public class S3Objects {
 	}
 
 	@Path("/{bucket}")
-	@DELETE
+	@POST
 	@Produces(MediaType.APPLICATION_XML)
 	public DeleteResult deleteObjects(@NotNull @PathParam("bucket") String bucket, @Context ContainerRequest request) {
 
 		if (!request.getUriInfo().getQueryParameters().containsKey("delete"))
 			throw new IllegalArgumentException("delete required");
 
-		final DeleteObjectsRequest req = null;
+		final DeleteObjectsRequest req = read(DeleteObjectsRequest.class, request.getEntityStream());
 
 		final DeleteResult result = ApiPoint.INSTANCE.deleteObjects(bucket, req);
 
@@ -69,31 +96,35 @@ public class S3Objects {
 
 	}
 
-	@Path("/{bucket}/{key}")
+	@Path("/{bucket}/{key: .*}")
 	@PUT
-	public Response putObject(@NotNull @PathParam("bucket") String bucket, @NotNull @PathParam("key") String key,
+	public Response putOrCopy(@NotNull @PathParam("bucket") String bucket, @NotNull @PathParam("key") String key,
 			@HeaderParam("Content-MD5") String inputMd5, @HeaderParam("Content-Type") String contentType,
-			@Context ContainerRequest req) {
+			@HeaderParam("x-amz-copy-source") String sourceKey, @Context ContainerRequest req) {
 
-		final String etag = ApiPoint.INSTANCE.putObject(bucket, key, Optional.ofNullable(inputMd5),
-				Optional.ofNullable(contentType), req.getEntityStream());
+		// copyObject
+		if (sourceKey != null) {
+			if (sourceKey.startsWith("/"))
+				sourceKey = sourceKey.replaceFirst("/", "");
+			final int idx = sourceKey.indexOf("/");
+			final String srcBucket = sourceKey.substring(0, idx);
+			final String srcKey = sourceKey.substring(idx + 1);
+			final CopyObjectResult result = ApiPoint.INSTANCE.copyObject(srcBucket, srcKey, bucket, key);
 
-		return Response.ok().tag(etag).build();
+			return Response.ok(result).build();
+		}
 
-	}
+		// putObject
+		else {
+			try (InputStream in = new ChunkedInputStream(req.getEntityStream())) {
+				final String etag = ApiPoint.INSTANCE.putObject(bucket, key, Optional.ofNullable(inputMd5),
+						Optional.ofNullable(contentType), in);
 
-	@Path("/{bucket}/{dest}")
-	@PUT
-	@Produces(MediaType.APPLICATION_XML)
-	public CopyObjectResult copyObject(@NotNull @PathParam("bucket") String dstBucket,
-			@NotNull @PathParam("dest") String dstKey, @NotNull @HeaderParam("x-amz-copy-source") String sourceKey) {
-		// Sourcekey is "bucket/key"
-		final int idx = sourceKey.indexOf("/");
-		final String srcBucket = sourceKey.substring(0, idx);
-		final String srcKey = sourceKey.substring(idx + 1);
-		final CopyObjectResult result = ApiPoint.INSTANCE.copyObject(srcBucket, srcKey, dstBucket, dstKey);
-
-		return result;
+				return Response.ok().tag(etag).build();
+			} catch (IOException e) {
+				throw new RequestFailedException(e);
+			}
+		}
 	}
 
 	@Path("/{bucket}")

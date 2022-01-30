@@ -39,17 +39,18 @@ public class SignatureFilter implements ContainerRequestFilter {
 
 			// Get request headers
 			// Fetch authorization header
-			final String authorization = requestContext.getHeaderString("Authorization");
-			final AwsSigV4 sigv4 = new AwsSigV4(authorization);
+			final String receivedAuth = requestContext.getHeaderString("Authorization");
+			final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);
 			final User user = ApiPoint.INSTANCE.user(sigv4.accessKeyId());
-			final String actualSignature = CanonicalRequest.calculateV4(requestContext, sigv4.signedHeaders(),
+			final String computedAuth = CanonicalRequest.calculateV4(requestContext, sigv4.signedHeaders(),
 					sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
-			final String expectedSignature = sigv4.signature();
 
-			if (!actualSignature.equals(expectedSignature)) {
-				_logger.error("exp " + expectedSignature + " act " + actualSignature);
+			if (!receivedAuth.equals(computedAuth)) {
+				_logger.error("exp " + computedAuth + " act " + receivedAuth);
 				throw new RequestFailedException("Invalid AWSV4 signature!");
 			}
+
+			requestContext.setProperty("s3user", user);
 
 		}
 	}

@@ -237,7 +237,7 @@ public enum S3MemoryImpl implements S3Api {
 		final int endIndex = Math.min(maxKeys, keys.size());
 		boolean truncated = endIndex < keys.size();
 		String nextMarker = null;
-		if (!truncated)
+		if (truncated)
 			nextMarker = keys.get(endIndex);
 
 		List<ListObject> list = new ArrayList<>(keys.size());

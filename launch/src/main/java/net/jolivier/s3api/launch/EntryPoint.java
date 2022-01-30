@@ -9,10 +9,12 @@ import org.glassfish.jersey.server.ServerProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.jolivier.s3api.http.ApiPoint;
 import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
 import net.jolivier.s3api.http.SigTerm;
 import net.jolivier.s3api.http.SignatureFilter;
+import net.jolivier.s3api.impl.S3MemoryImpl;
 import net.jolivier.s3api.impl.exception.ObjectNotFoundExceptionMapper;
 import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
 
@@ -22,6 +24,8 @@ public class EntryPoint {
 
 		final Logger logger = LoggerFactory.getLogger(EntryPoint.class);
 		SigTerm.configure();
+
+		ApiPoint.configure(S3MemoryImpl.INSTANCE);
 
 		final ResourceConfig config = new ResourceConfig();
 
@@ -36,7 +40,9 @@ public class EntryPoint {
 		config.register(S3Objects.class);
 
 		final URI uri = URI.create("http://" + "0.0.0.0" + ":" + 9090);
-		final Server server = JettyHttpContainerFactory.createServer(uri, false);
+		final Server server = JettyHttpContainerFactory.createServer(uri, config, false);
+
+		RequestLogger.install(server, RequestLogger.defaultFormat());
 
 		SigTerm.register(() -> {
 			server.stop();

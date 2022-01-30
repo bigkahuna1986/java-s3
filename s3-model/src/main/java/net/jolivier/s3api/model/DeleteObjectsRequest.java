@@ -19,6 +19,7 @@ public class DeleteObjectsRequest {
 		_quiet = quiet;
 	}
 
+	@XmlElement(name = "Object")
 	public List<ObjectIdentifier> getObjects() {
 		return _objects;
 	}

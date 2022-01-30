@@ -47,9 +47,9 @@ public class XmlModelTests {
 
 	@SuppressWarnings("unchecked")
 	public static <T> T read(Class<T> cls, String xml) {
-		JAXBContext jaxbContext;
+
 		try {
-			jaxbContext = JAXBContext.newInstance(cls);
+			JAXBContext jaxbContext = JAXBContext.newInstance(cls);
 
 			Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 
@@ -223,7 +223,7 @@ public class XmlModelTests {
 		assertEquals("o1", o1.getSize(), o3.getSize());
 		assertEquals("o1", o1.getOwner().getDisplayName(), o3.getOwner().getDisplayName());
 		assertEquals("o1", o1.getOwner().getId(), o3.getOwner().getId());
-		
+
 		assertEquals("o2", o2.getEtag(), o4.getEtag());
 		assertEquals("o2", o2.getKey(), o4.getKey());
 		assertEquals("o2", o2.getLastModified(), o4.getLastModified());

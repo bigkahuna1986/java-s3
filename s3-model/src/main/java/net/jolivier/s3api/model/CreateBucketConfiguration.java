@@ -15,7 +15,7 @@ public class CreateBucketConfiguration {
 		_location = location;
 	}
 
-	@XmlElement(name = "Location")
+	@XmlElement(name = "LocationConstraint")
 	public String getLocation() {
 		return _location;
 	}

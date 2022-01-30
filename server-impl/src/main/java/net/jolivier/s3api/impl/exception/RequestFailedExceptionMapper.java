@@ -11,7 +11,7 @@ public class RequestFailedExceptionMapper implements ExceptionMapper<RequestFail
 	@Override
 	public Response toResponse(RequestFailedException e) {
 		// 403 is sort of default response for security reasons.
-		return Response.status(HttpStatus.FORBIDDEN_403).build();
+		return Response.status(HttpStatus.BAD_REQUEST_400).build();
 	}
 
 }

@@ -37,6 +37,10 @@ public class AwsSigV4 {
 		return _accessKeyId;
 	}
 
+	public String date() {
+		return _date;
+	}
+
 	public String signature() {
 		return _signature;
 	}
