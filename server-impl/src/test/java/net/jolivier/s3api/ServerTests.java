@@ -20,6 +20,8 @@ import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CreateBucketConfiguration;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
@@ -82,12 +84,18 @@ public class ServerTests {
 
 				Delete.builder().objects(
 
-						ObjectIdentifier.builder().key("key1").build(),
-						ObjectIdentifier.builder().key("key2").build()
+						ObjectIdentifier.builder().key("key1").build(), ObjectIdentifier.builder().key("key2").build()
 
 				).build()
 
 		).build());
+
+		System.out.println(s3.putObject(PutObjectRequest.builder().bucket("bucket1").key("key3").build(),
+				RequestBody.fromString("object contents!")).eTag());
+
+		s3.deleteObject(DeleteObjectRequest.builder().bucket("bucket1").key("key3").build());
+
+		s3.deleteBucket(DeleteBucketRequest.builder().bucket("bucket1").build());
 
 	}
 

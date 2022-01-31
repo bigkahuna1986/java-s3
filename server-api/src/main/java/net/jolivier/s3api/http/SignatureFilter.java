@@ -41,7 +41,7 @@ public class SignatureFilter implements ContainerRequestFilter {
 			// Fetch authorization header
 			final String receivedAuth = requestContext.getHeaderString("Authorization");
 			final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);
-			final User user = ApiPoint.INSTANCE.user(sigv4.accessKeyId());
+			final User user = ApiPoint.auth().user(sigv4.accessKeyId());
 			final String computedAuth = CanonicalRequest.calculateV4(requestContext, sigv4.signedHeaders(),
 					sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
 

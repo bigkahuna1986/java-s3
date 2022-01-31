@@ -10,6 +10,7 @@
 rootProject.name = 's3-java-api'
 
 include 's3-model'
+include 's3-memory-impl'
 include 'server-api'
 include 'server-impl'
 include 'launch'

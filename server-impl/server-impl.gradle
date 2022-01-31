@@ -10,7 +10,9 @@ dependencies {
     implementation "org.eclipse.jetty:jetty-io:$jettyVersion"
     implementation "org.eclipse.jetty:jetty-http:$jettyVersion"
     implementation "org.eclipse.jetty:jetty-util:$jettyVersion"
+    implementation "org.eclipse.jetty:jetty-webapp:$jettyVersion"
     
+    implementation "org.glassfish.jersey.containers:jersey-container-jetty-servlet:$jerseyVersion"
     implementation "org.glassfish.jersey.containers:jersey-container-jetty-http:$jerseyVersion"
     
     testImplementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.1'

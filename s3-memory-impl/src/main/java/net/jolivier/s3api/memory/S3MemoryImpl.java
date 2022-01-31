@@ -1,10 +1,11 @@
-package net.jolivier.s3api.impl;
+package net.jolivier.s3api.memory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -22,7 +23,9 @@ import com.google.common.io.BaseEncoding;
 
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.ObjectNotFoundException;
-import net.jolivier.s3api.S3Api;
+import net.jolivier.s3api.RequestFailedException;
+import net.jolivier.s3api.S3AuthStore;
+import net.jolivier.s3api.S3DataStore;
 import net.jolivier.s3api.UserNotFoundException;
 import net.jolivier.s3api.model.Bucket;
 import net.jolivier.s3api.model.CopyObjectResult;
@@ -39,11 +42,22 @@ import net.jolivier.s3api.model.ObjectIdentifier;
 import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.User;
 
-public enum S3MemoryImpl implements S3Api {
+public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	INSTANCE;
 
+	private static final SecureRandom RANDOM = new SecureRandom();
 	private static final User USER = new User("DEFAULT", "DEFAULT");
 	private static final Owner OWNER = new Owner("DEFAULT", "DEFAULT");
+
+	private static final Map<String, User> USERS = new ConcurrentHashMap<>();
+	private static final Map<String, Owner> OWNERS = new ConcurrentHashMap<>();
+	private static final Map<String, String> USER_OWNER_MAPPING = new ConcurrentHashMap<>();
+
+	static {
+		USERS.put(USER.accessKeyId(), USER);
+		OWNERS.put(OWNER.getId(), OWNER);
+		USER_OWNER_MAPPING.put(USER.accessKeyId(), OWNER.getId());
+	}
 
 	private static final class Metadata {
 		private final byte[] _data;
@@ -76,8 +90,33 @@ public enum S3MemoryImpl implements S3Api {
 
 	}
 
+	private static final class OwnedBucket {
+		private final Bucket bucket;
+		private final Owner owner;
+
+		private OwnedBucket(Bucket b, Owner o) {
+			bucket = b;
+			owner = o;
+		}
+
+		public Bucket bucket() {
+			return bucket;
+		}
+	}
+
 	private static final Map<String, Map<String, Metadata>> MAP = new ConcurrentHashMap<>();
-	private static final Map<String, Bucket> BUCKETS = new ConcurrentHashMap<String, Bucket>();
+	private static final Map<String, OwnedBucket> BUCKETS = new ConcurrentHashMap<String, OwnedBucket>();
+
+	private static final void assertOwner(User user, String bucket) {
+		OwnedBucket ob = BUCKETS.get(bucket);
+		if (ob == null)
+			throw new RequestFailedException("No such bucket" + bucket);
+		String ownerId = USER_OWNER_MAPPING.get(user.accessKeyId());
+		if (ownerId == null)
+			throw new RequestFailedException();
+		if (!ob.owner.getId().equals(ownerId))
+			throw new RequestFailedException();
+	}
 
 	@Override
 	public User user(String accessKeyId) {
@@ -88,38 +127,81 @@ public enum S3MemoryImpl implements S3Api {
 	}
 
 	@Override
-	public Owner owner(String bucket) {
+	public Owner findOwner(String bucket) {
 		return OWNER;
 	}
 
 	@Override
-	public boolean headBucket(String bucket) {
+	public void deleteUser(String accessKeyId) {
+		USERS.remove(accessKeyId);
+	}
+
+	@Override
+	public void addUser(String accessKeyId, String secretKey) {
+		USERS.put(accessKeyId, new User(accessKeyId, secretKey));
+	}
+
+	@Override
+	public void deleteOwner(String id) {
+		OWNERS.remove(id);
+		USER_OWNER_MAPPING.remove(id);
+	}
+
+	@Override
+	public void addOwner(String displayName) {
+		final byte[] idBytes = new byte[15];
+		RANDOM.nextBytes(idBytes);
+		final String id = BaseEncoding.base32().encode(idBytes);
+		OWNERS.put(id, new Owner(displayName, id));
+	}
+
+	@Override
+	public Owner findOwner(User user) {
+		String ownerId = USER_OWNER_MAPPING.get(user.accessKeyId());
+		if (ownerId != null) {
+			Owner owner = OWNERS.get(ownerId);
+			if (owner != null)
+				return owner;
+		}
+		throw new RequestFailedException("No owner for " + user.accessKeyId());
+	}
+
+	@Override
+	public boolean headBucket(User user, String bucket) {
 		return MAP.containsKey(bucket);
 	}
 
 	@Override
-	public boolean createBucket(String bucket, String location) {
+	public boolean createBucket(User user, String bucket, String location) {
 		Map<String, Metadata> prev = MAP.putIfAbsent(bucket, new ConcurrentHashMap<>());
-		if (prev == null)
-			BUCKETS.put(bucket, new Bucket(bucket, ZonedDateTime.now()));
+		if (prev == null) {
+			Owner owner = findOwner(user);
+			BUCKETS.put(bucket, new OwnedBucket(new Bucket(bucket, ZonedDateTime.now()), owner));
+		}
 		return prev == null;
 	}
 
 	@Override
-	public boolean deleteBucket(String bucket) {
+	public boolean deleteBucket(User user, String bucket) {
+		assertOwner(user, bucket);
 		MAP.remove(bucket);
 		BUCKETS.remove(bucket);
 		return true;
 	}
 
 	@Override
-	public ListAllMyBucketsResult listBuckets() {
-		List<Bucket> buckets = new ArrayList<>(BUCKETS.values());
+	public ListAllMyBucketsResult listBuckets(User user) {
+		Owner owner = findOwner(user);
+
+		List<Bucket> buckets = BUCKETS.values().stream().filter(ob -> ob.owner.getId().equals(owner.getId()))
+				.map(OwnedBucket::bucket).collect(Collectors.toList());
 		return new ListAllMyBucketsResult(buckets, OWNER);
 	}
 
 	@Override
-	public GetObjectResult getObject(String bucket, String key) {
+	public GetObjectResult getObject(User user, String bucket, String key) {
+		assertOwner(user, bucket);
+
 		Map<String, Metadata> objects = MAP.get(bucket);
 		if (objects != null) {
 			Metadata metadata = objects.get(key);
@@ -132,7 +214,9 @@ public enum S3MemoryImpl implements S3Api {
 	}
 
 	@Override
-	public HeadObjectResult headObject(String bucket, String key) {
+	public HeadObjectResult headObject(User user, String bucket, String key) {
+		assertOwner(user, bucket);
+
 		Map<String, Metadata> objects = MAP.get(bucket);
 		if (objects != null) {
 			Metadata metadata = objects.get(key);
@@ -144,7 +228,9 @@ public enum S3MemoryImpl implements S3Api {
 	}
 
 	@Override
-	public boolean deleteObject(String bucket, String key) {
+	public boolean deleteObject(User user, String bucket, String key) {
+		assertOwner(user, bucket);
+
 		Map<String, Metadata> objects = MAP.get(bucket);
 		if (objects != null) {
 			Metadata prev = objects.remove(key);
@@ -155,7 +241,9 @@ public enum S3MemoryImpl implements S3Api {
 	}
 
 	@Override
-	public DeleteResult deleteObjects(String bucket, DeleteObjectsRequest request) {
+	public DeleteResult deleteObjects(User user, String bucket, DeleteObjectsRequest request) {
+		assertOwner(user, bucket);
+
 		Map<String, Metadata> objects = MAP.get(bucket);
 		if (objects != null) {
 			List<Deleted> deleted = new LinkedList<>();
@@ -176,8 +264,9 @@ public enum S3MemoryImpl implements S3Api {
 	}
 
 	@Override
-	public String putObject(String bucket, String key, Optional<String> inputMd5, Optional<String> contentType,
-			InputStream data) {
+	public String putObject(User user, String bucket, String key, Optional<String> inputMd5,
+			Optional<String> contentType, InputStream data) {
+		assertOwner(user, bucket);
 
 		Map<String, Metadata> objects = MAP.get(bucket);
 		if (objects != null) {
@@ -201,7 +290,10 @@ public enum S3MemoryImpl implements S3Api {
 	}
 
 	@Override
-	public CopyObjectResult copyObject(String srcBucket, String srcKey, String dstBucket, String dstKey) {
+	public CopyObjectResult copyObject(User user, String srcBucket, String srcKey, String dstBucket, String dstKey) {
+		assertOwner(user, srcBucket);
+		assertOwner(user, dstBucket);
+
 		if (!BUCKETS.containsKey(srcBucket))
 			throw new NoSuchBucketException(srcBucket);
 
@@ -215,8 +307,10 @@ public enum S3MemoryImpl implements S3Api {
 	}
 
 	@Override
-	public ListBucketResult listObjects(String bucket, Optional<String> delimiter, Optional<String> encodingType,
-			Optional<String> marker, int maxKeys, Optional<String> prefix) {
+	public ListBucketResult listObjects(User user, String bucket, Optional<String> delimiter,
+			Optional<String> encodingType, Optional<String> marker, int maxKeys, Optional<String> prefix) {
+		assertOwner(user, bucket);
+
 		Map<String, Metadata> objects = MAP.get(bucket);
 		if (objects == null)
 			throw new NoSuchBucketException(bucket);

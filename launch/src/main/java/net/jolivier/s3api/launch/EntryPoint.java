@@ -10,13 +10,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jolivier.s3api.http.ApiPoint;
+import net.jolivier.s3api.http.ProjectFeature;
 import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
 import net.jolivier.s3api.http.SigTerm;
 import net.jolivier.s3api.http.SignatureFilter;
-import net.jolivier.s3api.impl.S3MemoryImpl;
 import net.jolivier.s3api.impl.exception.ObjectNotFoundExceptionMapper;
 import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
+import net.jolivier.s3api.memory.S3MemoryImpl;
 
 public class EntryPoint {
 
@@ -25,7 +26,7 @@ public class EntryPoint {
 		final Logger logger = LoggerFactory.getLogger(EntryPoint.class);
 		SigTerm.configure();
 
-		ApiPoint.configure(S3MemoryImpl.INSTANCE);
+		ApiPoint.configure(S3MemoryImpl.INSTANCE, S3MemoryImpl.INSTANCE);
 
 		final ResourceConfig config = new ResourceConfig();
 
@@ -34,6 +35,8 @@ public class EntryPoint {
 		config.register(ObjectNotFoundExceptionMapper.class);
 		config.register(RequestFailedExceptionMapper.class);
 		config.register(SignatureFilter.class);
+
+		config.register(ProjectFeature.class);
 
 		// resources
 		config.register(S3Buckets.class);

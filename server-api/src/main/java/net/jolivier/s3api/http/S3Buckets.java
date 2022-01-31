@@ -25,6 +25,7 @@ import jakarta.xml.bind.Unmarshaller;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.model.CreateBucketConfiguration;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
+import net.jolivier.s3api.model.User;
 
 @Path("/")
 public class S3Buckets {
@@ -47,24 +48,24 @@ public class S3Buckets {
 
 	@Path("/{bucket}")
 	@HEAD
-	public Response headBucket(@NotNull @PathParam("bucket") String bucket) {
-		final boolean result = ApiPoint.INSTANCE.headBucket(bucket);
+	public Response headBucket(@Context User user, @NotNull @PathParam("bucket") String bucket) {
+		_logger.info("user " + user.accessKeyId());
+		final boolean result = ApiPoint.data().headBucket(user, bucket);
 		return result ? Response.ok().build() : Response.status(404).build();
 	}
 
 	@Path("/{bucket}")
 	@PUT
 	@Consumes(MediaType.APPLICATION_XML)
-	public Response createBucket(@NotNull @PathParam("bucket") String bucket, @Context ContainerRequest req) {
+	public Response createBucket(@Context User user, @NotNull @PathParam("bucket") String bucket,
+			@Context ContainerRequest req) {
 		try {
 			String location = "us-east-1";
 			if (req.hasEntity()) {
 				CreateBucketConfiguration config = read(CreateBucketConfiguration.class, req.getEntityStream());
 				location = config.getLocation();
 			}
-			final boolean result = ApiPoint.INSTANCE.createBucket(bucket, location);
-
-			_logger.info("create bucket " + bucket + " " + location);
+			final boolean result = ApiPoint.data().createBucket(user, bucket, location);
 
 			if (!result)
 				throw new RequestFailedException();
@@ -78,8 +79,8 @@ public class S3Buckets {
 
 	@Path("/{bucket}")
 	@DELETE
-	public Response deleteBucket(@NotNull @PathParam("bucket") String bucket) {
-		final boolean result = ApiPoint.INSTANCE.deleteBucket(bucket);
+	public Response deleteBucket(@Context User user, @NotNull @PathParam("bucket") String bucket) {
+		final boolean result = ApiPoint.data().deleteBucket(user, bucket);
 		if (!result)
 			throw new RequestFailedException();
 
@@ -89,8 +90,8 @@ public class S3Buckets {
 	@Path("/")
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
-	public ListAllMyBucketsResult listBuckets() {
-		final ListAllMyBucketsResult result = ApiPoint.INSTANCE.listBuckets();
+	public ListAllMyBucketsResult listBuckets(@Context User user) {
+		final ListAllMyBucketsResult result = ApiPoint.data().listBuckets(user);
 
 		return result;
 	}
