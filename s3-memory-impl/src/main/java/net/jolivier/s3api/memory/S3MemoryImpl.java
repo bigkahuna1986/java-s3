@@ -107,7 +107,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	private static final Map<String, Map<String, Metadata>> MAP = new ConcurrentHashMap<>();
 	private static final Map<String, OwnedBucket> BUCKETS = new ConcurrentHashMap<String, OwnedBucket>();
 
-	private static final void assertOwner(User user, String bucket) {
+	private static final Owner assertOwner(User user, String bucket) {
 		OwnedBucket ob = BUCKETS.get(bucket);
 		if (ob == null)
 			throw new RequestFailedException("No such bucket" + bucket);
@@ -116,19 +116,26 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 			throw new RequestFailedException();
 		if (!ob.owner.getId().equals(ownerId))
 			throw new RequestFailedException();
+
+		return ob.owner;
 	}
 
 	@Override
 	public User user(String accessKeyId) {
-		if (accessKeyId.equals(USER.accessKeyId()))
-			return USER;
+		User user = USERS.get(accessKeyId);
+		if (user != null)
+			return user;
 
 		throw new UserNotFoundException();
 	}
 
 	@Override
 	public Owner findOwner(String bucket) {
-		return OWNER;
+		OwnedBucket ob = BUCKETS.get(bucket);
+		if (ob != null) {
+			return ob.owner;
+		}
+		throw new RequestFailedException();
 	}
 
 	@Override
@@ -195,7 +202,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 		List<Bucket> buckets = BUCKETS.values().stream().filter(ob -> ob.owner.getId().equals(owner.getId()))
 				.map(OwnedBucket::bucket).collect(Collectors.toList());
-		return new ListAllMyBucketsResult(buckets, OWNER);
+		return new ListAllMyBucketsResult(buckets, owner);
 	}
 
 	@Override
@@ -309,7 +316,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	@Override
 	public ListBucketResult listObjects(User user, String bucket, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, int maxKeys, Optional<String> prefix) {
-		assertOwner(user, bucket);
+		Owner owner = assertOwner(user, bucket);
 
 		Map<String, Metadata> objects = MAP.get(bucket);
 		if (objects == null)
@@ -339,7 +346,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		for (int i = startIndex; i < endIndex; ++i) {
 			String key = keys.get(i);
 			Metadata metadata = objects.get(key);
-			list.add(new ListObject(metadata.etag(), key, metadata.modified(), OWNER, metadata.data().length));
+			list.add(new ListObject(metadata.etag(), key, metadata.modified(), owner, metadata.data().length));
 		}
 
 		ListBucketResult result = new ListBucketResult(truncated, marker.orElse(null), nextMarker, bucket,
