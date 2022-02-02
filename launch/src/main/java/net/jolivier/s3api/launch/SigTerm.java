@@ -1,4 +1,4 @@
-package net.jolivier.s3api.http;
+package net.jolivier.s3api.launch;
 
 import java.util.LinkedList;
 import java.util.List;

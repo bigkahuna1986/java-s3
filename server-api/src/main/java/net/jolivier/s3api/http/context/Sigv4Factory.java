@@ -1,12 +1,12 @@
-package net.jolivier.s3api.http;
+package net.jolivier.s3api.http.context;
 
 import org.glassfish.hk2.api.Factory;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
-import net.jolivier.s3api.model.User;
+import net.jolivier.s3api.auth.AwsSigV4;
 
-public class S3UserFactory implements Factory<User> {
+public class Sigv4Factory implements Factory<AwsSigV4> {
 
 	private ContainerRequestContext context;
 
@@ -16,12 +16,12 @@ public class S3UserFactory implements Factory<User> {
 	}
 
 	@Override
-	public User provide() {
-		return (User) context.getProperty("s3user");
+	public AwsSigV4 provide() {
+		return (AwsSigV4) context.getProperty("sigv4");
 	}
 
 	@Override
-	public void dispose(User instance) {
+	public void dispose(AwsSigV4 instance) {
 	}
 
 }

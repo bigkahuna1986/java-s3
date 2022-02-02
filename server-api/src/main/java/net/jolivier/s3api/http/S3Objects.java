@@ -2,13 +2,10 @@ package net.jolivier.s3api.http;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.Optional;
 
 import org.glassfish.jersey.server.ContainerRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.DELETE;
@@ -25,9 +22,6 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Unmarshaller;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
@@ -39,22 +33,6 @@ import net.jolivier.s3api.model.User;
 
 @Path("/")
 public class S3Objects {
-
-	private static final Logger _logger = LoggerFactory.getLogger(S3Objects.class);
-
-	@SuppressWarnings("unchecked")
-	public static <T> T read(Class<T> cls, InputStream input) {
-
-		try {
-			JAXBContext jaxbContext = JAXBContext.newInstance(cls);
-
-			Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-
-			return (T) jaxbUnmarshaller.unmarshal(new InputStreamReader(input));
-		} catch (JAXBException e) {
-			throw new RuntimeException(e);
-		}
-	}
 
 	@Path("/{bucket}/{key: .*}")
 	@GET
@@ -92,7 +70,8 @@ public class S3Objects {
 		if (!request.getUriInfo().getQueryParameters().containsKey("delete"))
 			throw new IllegalArgumentException("delete required");
 
-		final DeleteObjectsRequest req = read(DeleteObjectsRequest.class, request.getEntityStream());
+		final DeleteObjectsRequest req = RequestUtils.readJaxbEntity(DeleteObjectsRequest.class,
+				request.getEntityStream());
 
 		final DeleteResult result = ApiPoint.data().deleteObjects(user, bucket, req);
 

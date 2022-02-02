@@ -51,6 +51,7 @@ public class SignatureFilter implements ContainerRequestFilter {
 			}
 
 			requestContext.setProperty("s3user", user);
+			requestContext.setProperty("sigv4", sigv4);
 
 		}
 	}

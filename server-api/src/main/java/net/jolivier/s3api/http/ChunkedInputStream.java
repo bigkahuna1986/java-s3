@@ -1,22 +1,71 @@
 package net.jolivier.s3api.http;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import com.google.common.primitives.Ints;
+
 public class ChunkedInputStream extends InputStream {
 
-	private static final int CHUNK_SIZE = 262144;
-	private static final byte[] CRLF = "\r\n".getBytes(StandardCharsets.UTF_8);
-	private static final byte[] DELIMITER = ";".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] CRLF = "\r\n".getBytes(UTF_8);
+	private static final byte[] DELIMITER = ";".getBytes(UTF_8);
+
 	private final InputStream _source;
-	private final ByteBuffer _buffer = ByteBuffer.allocate(CHUNK_SIZE);
+	private final ByteBuffer _byteBuf = ByteBuffer.allocate(262_144);
 
 	private int _remainingInChunk = 0;
 
 	public ChunkedInputStream(InputStream source) {
 		_source = source;
+	}
+
+	@Override
+	public void close() throws IOException {
+		_source.close();
+	}
+
+	private boolean endsWith(ByteBuffer buffer, byte[] endSequence) {
+		final int pos = buffer.position();
+		if (pos >= endSequence.length) {
+			for (int i = 0; i < endSequence.length; i++)
+				if (buffer.get(pos - endSequence.length + i) != endSequence[i])
+					return false;
+
+			return true;
+		}
+
+		return false;
+	}
+
+	// Really need to do a bulk read.
+	private byte[] readUntil(byte[] endSequence) throws IOException {
+		_byteBuf.clear();
+		while (!endsWith(_byteBuf.asReadOnlyBuffer(), endSequence)) {
+			final int c = _source.read();
+			if (c < 0)
+				return null;
+
+			final byte unsigned = (byte) (c & 0xFF);
+			_byteBuf.put(unsigned);
+		}
+
+		final byte[] result = new byte[_byteBuf.position() - endSequence.length];
+		_byteBuf.rewind();
+		_byteBuf.get(result);
+		return result;
+	}
+
+	private static final int parseOrThrow(byte[] in) {
+		String trimmed = new String(in, StandardCharsets.UTF_8).trim();
+		Integer parsed = Ints.tryParse(trimmed, 16);
+		if (parsed == null)
+			throw new IllegalArgumentException("Invalid integer: " + trimmed);
+
+		return parsed;
 	}
 
 	@Override
@@ -26,7 +75,7 @@ public class ChunkedInputStream extends InputStream {
 			if (hexLengthBytes == null)
 				return -1;
 
-			_remainingInChunk = Integer.parseInt(new String(hexLengthBytes, StandardCharsets.UTF_8).trim(), 16);
+			_remainingInChunk = parseOrThrow(hexLengthBytes);
 
 			if (_remainingInChunk == 0)
 				return -1;
@@ -37,42 +86,5 @@ public class ChunkedInputStream extends InputStream {
 		_remainingInChunk--;
 
 		return _source.read();
-	}
-
-	@Override
-	public void close() throws IOException {
-		_source.close();
-	}
-
-	private byte[] readUntil(byte[] endSequence) throws IOException {
-		_buffer.clear();
-		while (!endsWith(_buffer.asReadOnlyBuffer(), endSequence)) {
-			final int c = _source.read();
-			if (c < 0) {
-				return null;
-			}
-
-			final byte unsigned = (byte) (c & 0xFF);
-			_buffer.put(unsigned);
-		}
-
-		final byte[] result = new byte[_buffer.position() - endSequence.length];
-		_buffer.rewind();
-		_buffer.get(result);
-		return result;
-	}
-
-	private boolean endsWith(ByteBuffer buffer, byte[] endSequence) {
-		final int pos = buffer.position();
-		if (pos >= endSequence.length) {
-			for (int i = 0; i < endSequence.length; i++) {
-				if (buffer.get(pos - endSequence.length + i) != endSequence[i])
-					return false;
-			}
-
-			return true;
-		}
-
-		return false;
 	}
 }

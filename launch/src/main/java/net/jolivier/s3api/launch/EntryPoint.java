@@ -13,7 +13,6 @@ import net.jolivier.s3api.http.ApiPoint;
 import net.jolivier.s3api.http.ProjectFeature;
 import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
-import net.jolivier.s3api.http.SigTerm;
 import net.jolivier.s3api.http.SignatureFilter;
 import net.jolivier.s3api.impl.exception.ObjectNotFoundExceptionMapper;
 import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
