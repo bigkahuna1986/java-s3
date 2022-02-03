@@ -86,7 +86,7 @@ public class S3Objects {
 	public Response putOrCopy(@Context User user, @NotNull @PathParam("bucket") String bucket,
 			@NotNull @PathParam("key") String key, @HeaderParam("Content-MD5") String inputMd5,
 			@HeaderParam("Content-Type") String contentType, @HeaderParam("x-amz-copy-source") String sourceKey,
-			@Context ContainerRequest req) {
+			@Context ContainerRequest request) {
 
 		// copyObject
 		if (sourceKey != null) {
@@ -102,7 +102,7 @@ public class S3Objects {
 
 		// putObject
 		else {
-			try (InputStream in = new ChunkedInputStream(req.getEntityStream())) {
+			try (InputStream in = new ChunkedInputStream(request.getEntityStream())) {
 				final PutObjectResult result = ApiPoint.data().putObject(user, bucket, key,
 						Optional.ofNullable(inputMd5), Optional.ofNullable(contentType), in);
 

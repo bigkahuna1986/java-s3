@@ -268,7 +268,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 			return new DeleteResult(deleted, errors);
 		}
 
-		return null;
+		throw new NoSuchBucketException(bucket);
 	}
 
 	@Override
@@ -283,8 +283,9 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 				data.transferTo(baos);
 				byte[] bytes = baos.toByteArray();
 				Metadata meta = new Metadata(bytes, contentType.orElse("application/octet-stream"),
-						inputMd5.orElseGet(() -> BaseEncoding.base16()
-								.encode(Hashing.md5().hashBytes(bytes).asBytes())), ZonedDateTime.now());
+						inputMd5.orElseGet(
+								() -> BaseEncoding.base16().encode(Hashing.md5().hashBytes(bytes).asBytes())),
+						ZonedDateTime.now());
 				objects.put(key, meta);
 
 				return new PutObjectResult(meta.etag(), Optional.empty());
