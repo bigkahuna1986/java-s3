@@ -14,7 +14,7 @@ import net.jolivier.s3api.http.ProjectFeature;
 import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
 import net.jolivier.s3api.http.SignatureFilter;
-import net.jolivier.s3api.impl.exception.ObjectNotFoundExceptionMapper;
+import net.jolivier.s3api.impl.exception.NoSuchKeyExceptionMapper;
 import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
 import net.jolivier.s3api.memory.S3MemoryImpl;
 
@@ -31,7 +31,7 @@ public class EntryPoint {
 
 		config.property(ServerProperties.WADL_FEATURE_DISABLE, Boolean.TRUE);
 
-		config.register(ObjectNotFoundExceptionMapper.class);
+		config.register(NoSuchKeyExceptionMapper.class);
 		config.register(RequestFailedExceptionMapper.class);
 		config.register(SignatureFilter.class);
 

@@ -22,7 +22,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 
 import net.jolivier.s3api.NoSuchBucketException;
-import net.jolivier.s3api.ObjectNotFoundException;
+import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.S3AuthStore;
 import net.jolivier.s3api.S3DataStore;
@@ -40,6 +40,7 @@ import net.jolivier.s3api.model.ListBucketResult;
 import net.jolivier.s3api.model.ListObject;
 import net.jolivier.s3api.model.ObjectIdentifier;
 import net.jolivier.s3api.model.Owner;
+import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
 
 public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
@@ -206,7 +207,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public GetObjectResult getObject(User user, String bucket, String key) {
+	public GetObjectResult getObject(User user, String bucket, String key, Optional<String> versionId) {
 		assertOwner(user, bucket);
 
 		Map<String, Metadata> objects = MAP.get(bucket);
@@ -217,11 +218,11 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 						new ByteArrayInputStream(metadata.data()));
 		}
 
-		throw new ObjectNotFoundException();
+		throw new NoSuchKeyException();
 	}
 
 	@Override
-	public HeadObjectResult headObject(User user, String bucket, String key) {
+	public HeadObjectResult headObject(User user, String bucket, String key, Optional<String> versionId) {
 		assertOwner(user, bucket);
 
 		Map<String, Metadata> objects = MAP.get(bucket);
@@ -231,11 +232,11 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 				return new HeadObjectResult(metadata.contentType(), metadata.etag(), metadata.modified());
 		}
 
-		throw new ObjectNotFoundException();
+		throw new NoSuchKeyException();
 	}
 
 	@Override
-	public boolean deleteObject(User user, String bucket, String key) {
+	public boolean deleteObject(User user, String bucket, String key, Optional<String> versionId) {
 		assertOwner(user, bucket);
 
 		Map<String, Metadata> objects = MAP.get(bucket);
@@ -271,7 +272,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public String putObject(User user, String bucket, String key, Optional<String> inputMd5,
+	public PutObjectResult putObject(User user, String bucket, String key, Optional<String> inputMd5,
 			Optional<String> contentType, InputStream data) {
 		assertOwner(user, bucket);
 
@@ -282,12 +283,11 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 				data.transferTo(baos);
 				byte[] bytes = baos.toByteArray();
 				Metadata meta = new Metadata(bytes, contentType.orElse("application/octet-stream"),
-						inputMd5.orElseGet(() -> {
-							return BaseEncoding.base16().encode(Hashing.md5().hashBytes(bytes).asBytes());
-						}), ZonedDateTime.now());
+						inputMd5.orElseGet(() -> BaseEncoding.base16()
+								.encode(Hashing.md5().hashBytes(bytes).asBytes())), ZonedDateTime.now());
 				objects.put(key, meta);
 
-				return meta.etag();
+				return new PutObjectResult(meta.etag(), Optional.empty());
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

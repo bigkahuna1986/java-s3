@@ -10,6 +10,7 @@ import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
 import net.jolivier.s3api.model.ListBucketResult;
+import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
 
 public interface S3DataStore {
@@ -22,15 +23,15 @@ public interface S3DataStore {
 
 	public ListAllMyBucketsResult listBuckets(User user);
 
-	public GetObjectResult getObject(User user, String bucket, String key);
+	public GetObjectResult getObject(User user, String bucket, String key, Optional<String> versionId);
 
-	public HeadObjectResult headObject(User user, String bucket, String key);
+	public HeadObjectResult headObject(User user, String bucket, String key, Optional<String> versionId);
 
-	public boolean deleteObject(User user, String bucket, String key);
+	public boolean deleteObject(User user, String bucket, String key, Optional<String> versionId);
 
 	public DeleteResult deleteObjects(User user, String bucket, DeleteObjectsRequest request);
 
-	public String putObject(User user, String bucket, String key, Optional<String> inputMd5,
+	public PutObjectResult putObject(User user, String bucket, String key, Optional<String> inputMd5,
 			Optional<String> contentType, InputStream data);
 
 	public CopyObjectResult copyObject(User user, String srcBucket, String srcKey, String dstBucket, String dstKey);

@@ -13,7 +13,7 @@ import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
-import net.jolivier.s3api.RequestFailedException;
+import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.auth.AwsSigV4;
 import net.jolivier.s3api.model.User;
 
@@ -42,12 +42,12 @@ public class SignatureFilter implements ContainerRequestFilter {
 			final String receivedAuth = requestContext.getHeaderString("Authorization");
 			final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);
 			final User user = ApiPoint.auth().user(sigv4.accessKeyId());
-			final String computedAuth = CanonicalRequest.calculateV4(requestContext, sigv4.signedHeaders(),
+			final String computedAuth = RequestUtils.calculateV4Sig(requestContext, sigv4.signedHeaders(),
 					sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
 
 			if (!receivedAuth.equals(computedAuth)) {
 				_logger.error("exp " + computedAuth + " act " + receivedAuth);
-				throw new RequestFailedException("Invalid AWSV4 signature!");
+				throw new InvalidAuthException("Invalid AWSV4 signature!");
 			}
 
 			requestContext.setProperty("s3user", user);

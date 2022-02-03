@@ -22,6 +22,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
@@ -29,6 +30,7 @@ import net.jolivier.s3api.model.DeleteResult;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListBucketResult;
+import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
 
 @Path("/")
@@ -37,8 +39,8 @@ public class S3Objects {
 	@Path("/{bucket}/{key: .*}")
 	@GET
 	public Response getObject(@Context User user, @NotNull @PathParam("bucket") String bucket,
-			@NotNull @PathParam("key") String key) {
-		final GetObjectResult result = ApiPoint.data().getObject(user, bucket, key);
+			@NotNull @PathParam("key") String key, @HeaderParam("x-amz-version-id") String versionId) {
+		final GetObjectResult result = ApiPoint.data().getObject(user, bucket, key, Optional.ofNullable(versionId));
 		return Response.ok(result.getData()).type(result.getContentType()).tag(result.getEtag())
 				.lastModified(Date.from(result.getModified().toInstant())).build();
 	}
@@ -46,8 +48,8 @@ public class S3Objects {
 	@Path("/{bucket}/{key: .*}")
 	@HEAD
 	public Response headObject(@Context User user, @NotNull @PathParam("bucket") String bucket,
-			@NotNull @PathParam("key") String key) {
-		final HeadObjectResult result = ApiPoint.data().headObject(user, bucket, key);
+			@NotNull @PathParam("key") String key, @HeaderParam("x-amz-version-id") String versionId) {
+		final HeadObjectResult result = ApiPoint.data().headObject(user, bucket, key, Optional.ofNullable(versionId));
 		return Response.ok().type(result.contentType()).tag(result.etag())
 				.lastModified(Date.from(result.modified().toInstant())).build();
 	}
@@ -56,7 +58,7 @@ public class S3Objects {
 	@DELETE
 	public Response deleteObject(@Context User user, @NotNull @PathParam("bucket") String bucket,
 			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
-		final boolean result = ApiPoint.data().deleteObject(user, bucket, key);
+		final boolean result = ApiPoint.data().deleteObject(user, bucket, key, Optional.ofNullable(versionId));
 
 		return Response.status(result ? 204 : 404).build();
 	}
@@ -101,10 +103,13 @@ public class S3Objects {
 		// putObject
 		else {
 			try (InputStream in = new ChunkedInputStream(req.getEntityStream())) {
-				final String etag = ApiPoint.data().putObject(user, bucket, key, Optional.ofNullable(inputMd5),
-						Optional.ofNullable(contentType), in);
+				final PutObjectResult result = ApiPoint.data().putObject(user, bucket, key,
+						Optional.ofNullable(inputMd5), Optional.ofNullable(contentType), in);
 
-				return Response.ok().tag(etag).build();
+				ResponseBuilder res = Response.ok().tag(result.etag());
+				result.versionId().ifPresent(v -> res.header("x-amz-version-id", v));
+
+				return res.build();
 			} catch (IOException e) {
 				throw new RequestFailedException(e);
 			}
