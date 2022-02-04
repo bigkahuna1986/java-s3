@@ -32,27 +32,30 @@ public class SignatureFilter implements ContainerRequestFilter {
 		if (!method.isAnnotationPresent(PermitAll.class)) {
 			// Access denied for all
 			if (method.isAnnotationPresent(DenyAll.class)) {
-				requestContext.abortWith(
-						Response.status(Response.Status.FORBIDDEN).entity("Access blocked for all users !!").build());
+				requestContext.abortWith(Response.status(Response.Status.FORBIDDEN).build());
 				return;
 			}
 
-			// Get request headers
 			// Fetch authorization header
-			final String receivedAuth = requestContext.getHeaderString("Authorization");
-			final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);
-			final User user = ApiPoint.auth().user(sigv4.accessKeyId());
-			final String computedAuth = RequestUtils.calculateV4Sig(requestContext, sigv4.signedHeaders(),
-					sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
+			try {
+				final String receivedAuth = requestContext.getHeaderString("Authorization");
+				final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);
+				final User user = ApiPoint.auth().user(sigv4.accessKeyId());
+				final String computedAuth = RequestUtils.calculateV4Sig(requestContext, sigv4.signedHeaders(),
+						sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
 
-			if (!receivedAuth.equals(computedAuth)) {
-				_logger.error("exp " + computedAuth + " act " + receivedAuth);
-				throw new InvalidAuthException("Invalid AWSV4 signature!");
+				if (!receivedAuth.equals(computedAuth)) {
+					_logger.error("exp " + computedAuth + " act " + receivedAuth);
+					throw new InvalidAuthException("Invalid AWSV4 signature!");
+				}
+
+				requestContext.setProperty("s3user", user);
+				requestContext.setProperty("sigv4", sigv4);
+
+			} catch (InvalidAuthException e) {
+				_logger.error("", e);
+				requestContext.abortWith(Response.status(Response.Status.FORBIDDEN).build());
 			}
-
-			requestContext.setProperty("s3user", user);
-			requestContext.setProperty("sigv4", sigv4);
-
 		}
 	}
 

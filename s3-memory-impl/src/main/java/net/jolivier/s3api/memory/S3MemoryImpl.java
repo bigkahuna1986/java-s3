@@ -21,12 +21,12 @@ import java.util.stream.Collectors;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 
+import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.S3AuthStore;
 import net.jolivier.s3api.S3DataStore;
-import net.jolivier.s3api.UserNotFoundException;
 import net.jolivier.s3api.model.Bucket;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteError;
@@ -127,7 +127,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		if (user != null)
 			return user;
 
-		throw new UserNotFoundException();
+		throw new InvalidAuthException("No such access key " + accessKeyId);
 	}
 
 	@Override
@@ -136,7 +136,8 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		if (ob != null) {
 			return ob.owner;
 		}
-		throw new RequestFailedException();
+
+		throw new NoSuchBucketException(bucket);
 	}
 
 	@Override

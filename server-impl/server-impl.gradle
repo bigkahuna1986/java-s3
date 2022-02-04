@@ -6,6 +6,7 @@ ext {
 
 dependencies {
     api(project(":server-api"))
+    api(project(":s3-memory-impl"))
     implementation "org.eclipse.jetty:jetty-server:$jettyVersion"
     implementation "org.eclipse.jetty:jetty-io:$jettyVersion"
     implementation "org.eclipse.jetty:jetty-http:$jettyVersion"
