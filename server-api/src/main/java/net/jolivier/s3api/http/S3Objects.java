@@ -103,6 +103,7 @@ public class S3Objects {
 		// putObject
 		else {
 			try (InputStream in = new ChunkedInputStream(request.getEntityStream())) {
+
 				final PutObjectResult result = ApiPoint.data().putObject(user, bucket, key,
 						Optional.ofNullable(inputMd5), Optional.ofNullable(contentType), in);
 

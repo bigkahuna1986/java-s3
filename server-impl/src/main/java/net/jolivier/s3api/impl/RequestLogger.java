@@ -1,4 +1,4 @@
-package net.jolivier.s3api.launch;
+package net.jolivier.s3api.impl;
 
 import java.util.TimeZone;
 

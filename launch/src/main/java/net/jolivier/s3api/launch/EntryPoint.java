@@ -14,6 +14,7 @@ import net.jolivier.s3api.http.ProjectFeature;
 import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
 import net.jolivier.s3api.http.SignatureFilter;
+import net.jolivier.s3api.impl.RequestLogger;
 import net.jolivier.s3api.impl.exception.NoSuchKeyExceptionMapper;
 import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
 import net.jolivier.s3api.memory.S3MemoryImpl;

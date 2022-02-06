@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -111,12 +110,12 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	private static final Owner assertOwner(User user, String bucket) {
 		OwnedBucket ob = BUCKETS.get(bucket);
 		if (ob == null)
-			throw new RequestFailedException("No such bucket" + bucket);
+			throw new NoSuchBucketException(bucket);
 		String ownerId = USER_OWNER_MAPPING.get(user.accessKeyId());
 		if (ownerId == null)
-			throw new RequestFailedException();
+			throw new InvalidAuthException();
 		if (!ob.owner.getId().equals(ownerId))
-			throw new RequestFailedException();
+			throw new InvalidAuthException();
 
 		return ob.owner;
 	}
@@ -291,7 +290,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 				return new PutObjectResult(meta.etag(), Optional.empty());
 			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+				throw new RequestFailedException(e);
 			}
 		}
 

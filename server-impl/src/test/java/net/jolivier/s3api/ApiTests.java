@@ -2,13 +2,17 @@ package net.jolivier.s3api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Server;
@@ -25,6 +29,8 @@ import net.jolivier.s3api.http.ProjectFeature;
 import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
 import net.jolivier.s3api.http.SignatureFilter;
+import net.jolivier.s3api.impl.RequestLogger;
+import net.jolivier.s3api.impl.exception.NoSuchBucketExceptionMapper;
 import net.jolivier.s3api.impl.exception.NoSuchKeyExceptionMapper;
 import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
 import net.jolivier.s3api.memory.S3MemoryImpl;
@@ -74,6 +80,7 @@ public class ApiTests {
 		config.property(ServerProperties.WADL_FEATURE_DISABLE, Boolean.TRUE);
 
 		config.register(NoSuchKeyExceptionMapper.class);
+		config.register(NoSuchBucketExceptionMapper.class);
 		config.register(RequestFailedExceptionMapper.class);
 		config.register(SignatureFilter.class);
 
@@ -85,11 +92,21 @@ public class ApiTests {
 
 		_server = JettyHttpContainerFactory.createServer(ENDPOINT, config, false);
 
+		RequestLogger.install(_server, RequestLogger.defaultFormat());
+
 		_server.start();
 	}
 
 	private static final String randomBucket() {
 		return "bucket-" + (RANDOM.nextInt(90) + RANDOM.nextInt(10));
+	}
+
+	private static final String randomKey(boolean prefix) {
+		if (prefix) {
+			return "prefix" + (RANDOM.nextInt(90) + RANDOM.nextInt(10)) + "/key-"
+					+ (RANDOM.nextInt(90) + RANDOM.nextInt(10));
+		}
+		return "key-" + (RANDOM.nextInt(90) + RANDOM.nextInt(10));
 	}
 
 	@Test
@@ -178,8 +195,72 @@ public class ApiTests {
 		s3.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build());
 	}
 
+	@Test(expected = NoSuchBucketException.class)
+	public void noSuchBucket() {
+		final S3ClientBuilder s3Builder = S3Client.builder()
+				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
+
+		s3Builder.region(Region.US_EAST_1).endpointOverride(ENDPOINT)
+				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+
+		final S3Client s3 = s3Builder.build();
+
+		s3.headBucket(HeadBucketRequest.builder().bucket(randomBucket()).build());
+	}
+
 	@Test
-	public void massPutAndTest() {
+	public void massPutAndTest() throws NoSuchKeyException, InvalidObjectStateException, S3Exception,
+			AwsServiceException, SdkClientException, IOException {
+		final S3ClientBuilder s3Builder = S3Client.builder()
+				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
+
+		s3Builder.region(Region.US_EAST_1).endpointOverride(ENDPOINT)
+				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+
+		final S3Client s3 = s3Builder.build();
+
+		final String bucket = randomBucket();
+
+		s3.createBucket(CreateBucketRequest.builder().bucket(bucket)
+
+				.createBucketConfiguration(CreateBucketConfiguration.builder().locationConstraint("us-west-2").build())
+
+				.build());
+
+		final Set<String> keys = new HashSet<>();
+		int dataLength = 512;
+		for (int i = 0; i < 10; ++i) {
+			final String key = randomKey(i % 2 == 0);
+			keys.add(key);
+			final byte[] data = new byte[dataLength];
+			RANDOM.nextBytes(data);
+			s3.putObject(PutObjectRequest.builder().bucket(bucket).key(key).build(), RequestBody.fromBytes(data));
+		}
+
+		final List<String> listedKeys = s3.listObjects(ListObjectsRequest.builder().bucket(bucket).build()).contents()
+				.stream().map(S3Object::key).collect(Collectors.toList());
+
+		for (int i = 0; i < 10; ++i) {
+			final String nextKey = listedKeys.get(i);
+			assertTrue("key " + nextKey, keys.contains(nextKey));
+		}
+
+		for (String key : keys) {
+			final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			s3.getObject(GetObjectRequest.builder().bucket(bucket).key(key).build()).transferTo(baos);
+
+			final byte[] data = baos.toByteArray();
+			assertEquals("data size", dataLength, data.length);
+		}
+
+		final List<ObjectIdentifier> ids = new ArrayList<>();
+
+		for (String key : keys) {
+			ids.add(ObjectIdentifier.builder().key(key).build());
+		}
+
+		s3.deleteObjects(
+				DeleteObjectsRequest.builder().bucket(bucket).delete(Delete.builder().objects(ids).build()).build());
 
 	}
 
