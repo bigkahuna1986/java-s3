@@ -3,22 +3,22 @@ package net.jolivier.s3api.launch;
 import java.net.URI;
 
 import org.eclipse.jetty.server.Server;
-import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.server.ServerProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jolivier.s3api.http.ApiPoint;
-import net.jolivier.s3api.http.ProjectFeature;
-import net.jolivier.s3api.http.S3Buckets;
-import net.jolivier.s3api.http.S3Objects;
-import net.jolivier.s3api.http.SignatureFilter;
 import net.jolivier.s3api.impl.RequestLogger;
-import net.jolivier.s3api.impl.exception.NoSuchKeyExceptionMapper;
-import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
+import net.jolivier.s3api.impl.S3Server;
 import net.jolivier.s3api.memory.S3MemoryImpl;
 
+/**
+ * Default entry point to start the s3 server. Hard coded to listen on
+ * localhost:9090. You should generally just call
+ * {@link net.jolivier.s3api.impl.S3Server#createServer(URI)}
+ * 
+ * @author josho
+ *
+ */
 public class EntryPoint {
 
 	public static void main(String[] args) throws Exception {
@@ -28,22 +28,7 @@ public class EntryPoint {
 
 		ApiPoint.configure(S3MemoryImpl.INSTANCE, S3MemoryImpl.INSTANCE);
 
-		final ResourceConfig config = new ResourceConfig();
-
-		config.property(ServerProperties.WADL_FEATURE_DISABLE, Boolean.TRUE);
-
-		config.register(NoSuchKeyExceptionMapper.class);
-		config.register(RequestFailedExceptionMapper.class);
-		config.register(SignatureFilter.class);
-
-		config.register(ProjectFeature.class);
-
-		// resources
-		config.register(S3Buckets.class);
-		config.register(S3Objects.class);
-
-		final URI uri = URI.create("http://" + "0.0.0.0" + ":" + 9090);
-		final Server server = JettyHttpContainerFactory.createServer(uri, config, false);
+		Server server = S3Server.createServer(URI.create("http://" + "0.0.0.0" + ":" + 9090));
 
 		RequestLogger.install(server, RequestLogger.defaultFormat());
 

@@ -16,23 +16,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Server;
-import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.server.ServerProperties;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import net.jolivier.s3api.http.ApiPoint;
-import net.jolivier.s3api.http.ProjectFeature;
-import net.jolivier.s3api.http.S3Buckets;
-import net.jolivier.s3api.http.S3Objects;
-import net.jolivier.s3api.http.SignatureFilter;
 import net.jolivier.s3api.impl.RequestLogger;
-import net.jolivier.s3api.impl.exception.NoSuchBucketExceptionMapper;
-import net.jolivier.s3api.impl.exception.NoSuchKeyExceptionMapper;
-import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
+import net.jolivier.s3api.impl.S3Server;
 import net.jolivier.s3api.memory.S3MemoryImpl;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -75,22 +66,7 @@ public class ApiTests {
 	public static void startup() throws Exception {
 		ApiPoint.configure(S3MemoryImpl.INSTANCE, S3MemoryImpl.INSTANCE);
 
-		final ResourceConfig config = new ResourceConfig();
-
-		config.property(ServerProperties.WADL_FEATURE_DISABLE, Boolean.TRUE);
-
-		config.register(NoSuchKeyExceptionMapper.class);
-		config.register(NoSuchBucketExceptionMapper.class);
-		config.register(RequestFailedExceptionMapper.class);
-		config.register(SignatureFilter.class);
-
-		config.register(ProjectFeature.class);
-
-		// resources
-		config.register(S3Buckets.class);
-		config.register(S3Objects.class);
-
-		_server = JettyHttpContainerFactory.createServer(ENDPOINT, config, false);
+		_server = S3Server.createServer(ENDPOINT);
 
 		RequestLogger.install(_server, RequestLogger.defaultFormat());
 
@@ -102,9 +78,9 @@ public class ApiTests {
 	}
 
 	private static final String randomKey(boolean prefix) {
-		if (prefix) {
-			return "prefix" + RANDOM.nextInt(1000) + "/key-" + RANDOM.nextInt(1000);
-		}
+		if (prefix)
+			return "prefix-" + RANDOM.nextInt(1000) + "/key-" + RANDOM.nextInt(1000);
+
 		return "key-" + RANDOM.nextInt(1000);
 	}
 
@@ -120,7 +96,7 @@ public class ApiTests {
 
 		S3Exception exception = assertThrows(S3Exception.class, () -> {
 			try {
-				s3.headBucket(HeadBucketRequest.builder().bucket("bucket1").build());
+				s3.headBucket(HeadBucketRequest.builder().bucket(randomBucket()).build());
 			} catch (NoSuchBucketException e) {
 			}
 		});

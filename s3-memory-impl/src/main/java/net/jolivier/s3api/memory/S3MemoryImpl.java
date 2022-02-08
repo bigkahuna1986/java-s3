@@ -42,21 +42,38 @@ import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
 
+/**
+ * Basic implementation of the S3DataStore and S3AuthStore. This impl only
+ * stores object, users, and accounts in memory. There is no way to serialize
+ * this class.
+ * 
+ * Generally should only use this impl for testing.
+ * 
+ * @author josho
+ *
+ */
 public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	INSTANCE;
 
 	private static final SecureRandom RANDOM = new SecureRandom();
-	private static final User USER = new User("DEFAULT", "DEFAULT");
-	private static final Owner OWNER = new Owner("DEFAULT", "DEFAULT");
-
 	private static final Map<String, User> USERS = new ConcurrentHashMap<>();
 	private static final Map<String, Owner> OWNERS = new ConcurrentHashMap<>();
 	private static final Map<String, String> USER_OWNER_MAPPING = new ConcurrentHashMap<>();
 
-	static {
-		USERS.put(USER.accessKeyId(), USER);
-		OWNERS.put(OWNER.getId(), OWNER);
-		USER_OWNER_MAPPING.put(USER.accessKeyId(), OWNER.getId());
+	private static final User USER = new User("DEFAULT", "DEFAULT");
+	private static final Owner OWNER = new Owner("DEFAULT", "DEFAULT");
+
+	/**
+	 * Default configuration method.
+	 * 
+	 * @param defaultAccounts Add system default accounts
+	 */
+	public static final void configure(boolean defaultAccounts) {
+		if (defaultAccounts) {
+			USERS.put(USER.accessKeyId(), USER);
+			OWNERS.put(OWNER.getId(), OWNER);
+			USER_OWNER_MAPPING.put(USER.accessKeyId(), OWNER.getId());
+		}
 	}
 
 	private static final class Metadata {
