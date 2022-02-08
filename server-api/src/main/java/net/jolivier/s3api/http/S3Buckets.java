@@ -34,7 +34,7 @@ public class S3Buckets {
 	 */
 	@Path("/{bucket}")
 	@HEAD
-	public Response headBucket(@Context User user, @NotNull @PathParam("bucket") String bucket) {
+	public Response headBucket(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket) {
 		final boolean result = ApiPoint.data().headBucket(user, bucket);
 		return result ? Response.ok().build() : Response.status(404).build();
 	}
@@ -48,7 +48,7 @@ public class S3Buckets {
 	@Path("/{bucket}")
 	@PUT
 	@Consumes(MediaType.APPLICATION_XML)
-	public Response createBucket(@Context User user, @NotNull @PathParam("bucket") String bucket,
+	public Response createBucket(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket,
 			@Context ContainerRequest req) {
 		String location = "us-east-1";
 		if (req.hasEntity()) {
@@ -72,7 +72,7 @@ public class S3Buckets {
 	 */
 	@Path("/{bucket}")
 	@DELETE
-	public Response deleteBucket(@Context User user, @NotNull @PathParam("bucket") String bucket) {
+	public Response deleteBucket(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket) {
 		final boolean result = ApiPoint.data().deleteBucket(user, bucket);
 		if (!result)
 			throw new RequestFailedException();
@@ -87,7 +87,7 @@ public class S3Buckets {
 	@Path("/")
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
-	public ListAllMyBucketsResult listBuckets(@Context User user) {
+	public ListAllMyBucketsResult listBuckets(@NotNull @Context User user) {
 		final ListAllMyBucketsResult result = ApiPoint.data().listBuckets(user);
 
 		return result;

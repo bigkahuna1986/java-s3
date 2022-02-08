@@ -98,15 +98,14 @@ public class ApiTests {
 	}
 
 	private static final String randomBucket() {
-		return "bucket-" + (RANDOM.nextInt(90) + RANDOM.nextInt(10));
+		return "bucket-" + RANDOM.nextInt(1000);
 	}
 
 	private static final String randomKey(boolean prefix) {
 		if (prefix) {
-			return "prefix" + (RANDOM.nextInt(90) + RANDOM.nextInt(10)) + "/key-"
-					+ (RANDOM.nextInt(90) + RANDOM.nextInt(10));
+			return "prefix" + RANDOM.nextInt(1000) + "/key-" + RANDOM.nextInt(1000);
 		}
-		return "key-" + (RANDOM.nextInt(90) + RANDOM.nextInt(10));
+		return "key-" + RANDOM.nextInt(1000);
 	}
 
 	@Test
@@ -209,7 +208,33 @@ public class ApiTests {
 	}
 
 	@Test
-	public void massPutAndTest() throws NoSuchKeyException, InvalidObjectStateException, S3Exception,
+	public void noSuchKey() {
+		final S3ClientBuilder s3Builder = S3Client.builder()
+				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
+
+		s3Builder.region(Region.US_EAST_1).endpointOverride(ENDPOINT)
+				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+
+		final S3Client s3 = s3Builder.build();
+
+		String bucket = randomBucket();
+
+		s3.createBucket(CreateBucketRequest.builder().bucket(bucket)
+
+				.createBucketConfiguration(CreateBucketConfiguration.builder().locationConstraint("us-west-2").build())
+
+				.build());
+
+		S3Exception exception = assertThrows(S3Exception.class, () -> {
+			s3.getObject(GetObjectRequest.builder().bucket(bucket).key("key1").build());
+		});
+
+		assertEquals("key ", 404, exception.statusCode());
+
+	}
+
+	@Test
+	public void massPutAndDelete() throws NoSuchKeyException, InvalidObjectStateException, S3Exception,
 			AwsServiceException, SdkClientException, IOException {
 		final S3ClientBuilder s3Builder = S3Client.builder()
 				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
@@ -237,12 +262,27 @@ public class ApiTests {
 			s3.putObject(PutObjectRequest.builder().bucket(bucket).key(key).build(), RequestBody.fromBytes(data));
 		}
 
-		final List<String> listedKeys = s3.listObjects(ListObjectsRequest.builder().bucket(bucket).build()).contents()
-				.stream().map(S3Object::key).collect(Collectors.toList());
+		{
+			final List<String> listedKeys = s3.listObjects(ListObjectsRequest.builder().bucket(bucket).build())
+					.contents().stream().map(S3Object::key).collect(Collectors.toList());
 
-		for (int i = 0; i < 10; ++i) {
-			final String nextKey = listedKeys.get(i);
-			assertTrue("key " + nextKey, keys.contains(nextKey));
+			for (int i = 0; i < 10; ++i) {
+				final String nextKey = listedKeys.get(i);
+				assertTrue("key " + nextKey, keys.contains(nextKey));
+			}
+		}
+
+		{
+			final List<String> listedKeys = s3
+					.listObjects(ListObjectsRequest.builder().bucket(bucket).prefix("prefix").build()).contents()
+					.stream().map(S3Object::key).collect(Collectors.toList());
+
+			assertEquals("prefix list size", 5, listedKeys.size());
+
+			for (int i = 0; i < 5; ++i) {
+				final String nextKey = listedKeys.get(i);
+				assertTrue("key " + nextKey, keys.contains(nextKey));
+			}
 		}
 
 		for (String key : keys) {
