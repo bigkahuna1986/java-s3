@@ -1,7 +1,7 @@
 
 dependencies {
   	api(project(":s3-model"))
-
+  	implementation group: 'com.google.guava', name: 'guava', version: '31.0.1-jre'
 	
     testImplementation 'junit:junit:4.13'
 }

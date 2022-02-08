@@ -14,5 +14,6 @@ gradle-app.setting
 # gradle/wrapper/gradle-wrapper.properties
 
 **/bin/
+**/build/
 **/.classpath
 **/.settings/org.eclipse.jdt.core.prefs

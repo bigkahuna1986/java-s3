@@ -66,8 +66,8 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 public class ApiTests {
 
 	private static final AwsBasicCredentials CREDS = AwsBasicCredentials.create("DEFAULT", "DEFAULT");
-	private static final URI ENDPOINT = URI.create("http://localhost:9090");
 	private static final SecureRandom RANDOM = new SecureRandom();
+	private static final URI ENDPOINT = URI.create("http://localhost:" + (RANDOM.nextInt(100) + 9000));
 
 	private static Server _server;
 

@@ -7,14 +7,14 @@ ext {
 dependencies {
     api(project(":server-api"))
     api(project(":s3-memory-impl"))
-    implementation "org.eclipse.jetty:jetty-server:$jettyVersion"
-    implementation "org.eclipse.jetty:jetty-io:$jettyVersion"
-    implementation "org.eclipse.jetty:jetty-http:$jettyVersion"
-    implementation "org.eclipse.jetty:jetty-util:$jettyVersion"
-    implementation "org.eclipse.jetty:jetty-webapp:$jettyVersion"
+    api "org.eclipse.jetty:jetty-server:$jettyVersion"
+    api "org.eclipse.jetty:jetty-io:$jettyVersion"
+    api "org.eclipse.jetty:jetty-http:$jettyVersion"
+    api "org.eclipse.jetty:jetty-util:$jettyVersion"
+    api "org.eclipse.jetty:jetty-webapp:$jettyVersion"
     
-    implementation "org.glassfish.jersey.containers:jersey-container-jetty-servlet:$jerseyVersion"
-    implementation "org.glassfish.jersey.containers:jersey-container-jetty-http:$jerseyVersion"
+    api "org.glassfish.jersey.containers:jersey-container-jetty-servlet:$jerseyVersion"
+    api "org.glassfish.jersey.containers:jersey-container-jetty-http:$jerseyVersion"
     
     testImplementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.1'
 	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.1'
