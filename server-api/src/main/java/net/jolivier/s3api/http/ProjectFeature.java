@@ -11,6 +11,12 @@ import net.jolivier.s3api.http.context.S3UserFactory;
 import net.jolivier.s3api.http.context.Sigv4Factory;
 import net.jolivier.s3api.model.User;
 
+/**
+ * Registers Jersey context factories for {@link net.jolivier.s3api.model.User}
+ * 
+ * @author josho
+ *
+ */
 @Provider
 public class ProjectFeature implements Feature {
 

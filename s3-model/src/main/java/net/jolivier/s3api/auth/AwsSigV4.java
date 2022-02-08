@@ -6,6 +6,14 @@ import java.util.regex.Pattern;
 
 import net.jolivier.s3api.RequestFailedException;
 
+/**
+ * Parsing utility for the AWSV4 signature.
+ * 
+ * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html">AWS Signature Reference</a>
+ * 
+ * @author josho
+ *
+ */
 public class AwsSigV4 {
 
 	public static final String X_AMZ_DATE = "x-amz-date";

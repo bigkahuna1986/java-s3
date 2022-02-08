@@ -23,6 +23,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
+import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
@@ -36,6 +37,11 @@ import net.jolivier.s3api.model.User;
 @Path("/")
 public class S3Objects {
 
+	/**
+	 * Get an existing object.
+	 *
+	 * @throws NoSuchKeyException if the object does not exist.
+	 */
 	@Path("/{bucket}/{key: .*}")
 	@GET
 	public Response getObject(@Context User user, @NotNull @PathParam("bucket") String bucket,
@@ -45,6 +51,10 @@ public class S3Objects {
 				.lastModified(Date.from(result.getModified().toInstant())).build();
 	}
 
+	/**
+	 * Checks for an objects.
+	 * 
+	 */
 	@Path("/{bucket}/{key: .*}")
 	@HEAD
 	public Response headObject(@Context User user, @NotNull @PathParam("bucket") String bucket,
@@ -54,6 +64,11 @@ public class S3Objects {
 				.lastModified(Date.from(result.modified().toInstant())).build();
 	}
 
+	/**
+	 * Deletes an existing object
+	 * 
+	 * @throws NoSuchKeyExcpetion if the object does not exist.
+	 */
 	@Path("/{bucket}/{key: .*}")
 	@DELETE
 	public Response deleteObject(@Context User user, @NotNull @PathParam("bucket") String bucket,
@@ -63,6 +78,9 @@ public class S3Objects {
 		return Response.status(result ? 204 : 404).build();
 	}
 
+	/**
+	 * Delete objects from a bucket
+	 **/
 	@Path("/{bucket}")
 	@POST
 	@Produces(MediaType.APPLICATION_XML)
@@ -70,7 +88,7 @@ public class S3Objects {
 			@Context ContainerRequest request) {
 
 		if (!request.getUriInfo().getQueryParameters().containsKey("delete"))
-			throw new IllegalArgumentException("delete required");
+			throw new RequestFailedException("delete required");
 
 		final DeleteObjectsRequest req = RequestUtils.readJaxbEntity(DeleteObjectsRequest.class,
 				request.getEntityStream());
@@ -81,6 +99,14 @@ public class S3Objects {
 
 	}
 
+	/**
+	 * Both putObject and copyObject are PUT operations on a bucket. This method
+	 * detects the "x-amz-copy-source" header and branches behavior on that.
+	 * 
+	 * If the header is present the operation is assumed to be a copyObject. If the
+	 * header is absent the operation is assumed to be a putObject.
+	 * 
+	 */
 	@Path("/{bucket}/{key: .*}")
 	@PUT
 	public Response putOrCopy(@Context User user, @NotNull @PathParam("bucket") String bucket,
@@ -117,6 +143,11 @@ public class S3Objects {
 		}
 	}
 
+	/**
+	 * List the objects in a bucket.
+	 * 
+	 * @throws NoSuchBucketException if the bucket does not exist.
+	 */
 	@Path("/{bucket}")
 	@GET
 	@Produces(MediaType.APPLICATION_XML)

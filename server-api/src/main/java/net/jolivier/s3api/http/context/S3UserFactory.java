@@ -6,6 +6,12 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import net.jolivier.s3api.model.User;
 
+/**
+ * Jersey context factory for a User on a particular request.
+ * 
+ * @author josho
+ *
+ */
 public class S3UserFactory implements Factory<User> {
 
 	private ContainerRequestContext context;

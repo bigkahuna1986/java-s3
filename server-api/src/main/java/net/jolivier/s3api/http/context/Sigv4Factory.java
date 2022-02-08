@@ -6,6 +6,12 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import net.jolivier.s3api.auth.AwsSigV4;
 
+/**
+ * Context factory for an AWSV4 signature on a particular request.
+ * 
+ * @author josho
+ *
+ */
 public class Sigv4Factory implements Factory<AwsSigV4> {
 
 	private ContainerRequestContext context;

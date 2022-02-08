@@ -19,9 +19,19 @@ import net.jolivier.s3api.model.CreateBucketConfiguration;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
 import net.jolivier.s3api.model.User;
 
+/**
+ * Jersey class for handling bucket related operations.
+ * 
+ * @author josho
+ *
+ */
 @Path("/")
 public class S3Buckets {
 
+	/**
+	 * Head bucket, returns 200 or 404.
+	 * 
+	 */
 	@Path("/{bucket}")
 	@HEAD
 	public Response headBucket(@Context User user, @NotNull @PathParam("bucket") String bucket) {
@@ -29,6 +39,12 @@ public class S3Buckets {
 		return result ? Response.ok().build() : Response.status(404).build();
 	}
 
+	/**
+	 * Create a new bucket.
+	 * 
+	 * @throws RequestFailedException if the bucket already exists.
+	 * 
+	 */
 	@Path("/{bucket}")
 	@PUT
 	@Consumes(MediaType.APPLICATION_XML)
@@ -48,6 +64,12 @@ public class S3Buckets {
 		return Response.ok().build();
 	}
 
+	/**
+	 * Delete a bucket.
+	 *
+	 * @throws NoSuchBucketException if the bucket does not exists.
+	 * 
+	 */
 	@Path("/{bucket}")
 	@DELETE
 	public Response deleteBucket(@Context User user, @NotNull @PathParam("bucket") String bucket) {
@@ -58,6 +80,10 @@ public class S3Buckets {
 		return Response.ok().build();
 	}
 
+	/**
+	 * List buckets for an account.
+	 * 
+	 */
 	@Path("/")
 	@GET
 	@Produces(MediaType.APPLICATION_XML)

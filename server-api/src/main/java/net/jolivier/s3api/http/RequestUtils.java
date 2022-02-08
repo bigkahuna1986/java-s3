@@ -14,6 +14,9 @@ import uk.co.lucasweb.aws.v4.signer.Signer;
 import uk.co.lucasweb.aws.v4.signer.Signer.Builder;
 import uk.co.lucasweb.aws.v4.signer.credentials.AwsCredentials;
 
+/**
+ * Static utility methods for various requests.
+ */
 public enum RequestUtils {
 	;
 

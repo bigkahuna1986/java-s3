@@ -13,6 +13,20 @@ import net.jolivier.s3api.model.ListBucketResult;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
 
+/**
+ * All methods in this interface correspond to their counterparts listed in the
+ * Amazon S3 Reference API.
+ * 
+ * All methods here will throw any of NoSuchBucketException, NoSuchKeyException
+ * or RequestFailedException if any preconditions fail.
+ * 
+ * @see <a href=
+ *      "https://docs.aws.amazon.com/AmazonS3/latest/API/API_Operations_Amazon_Simple_Storage_Service.html">S3
+ *      API Reference</a>
+ * 
+ * @author josho
+ *
+ */
 public interface S3DataStore {
 
 	public boolean headBucket(User user, String bucket);

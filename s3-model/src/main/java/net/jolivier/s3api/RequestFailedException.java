@@ -1,5 +1,13 @@
 package net.jolivier.s3api;
 
+/**
+ * A general request failure that doesn't fit other exceptions.
+ * 
+ * Forces an http 400 code.
+ * 
+ * @author josho
+ *
+ */
 public class RequestFailedException extends RuntimeException {
 
 	public RequestFailedException() {

@@ -145,8 +145,9 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public void addUser(String accessKeyId, String secretKey) {
+	public void addUser(Owner owner, String accessKeyId, String secretKey) {
 		USERS.put(accessKeyId, new User(accessKeyId, secretKey));
+		USER_OWNER_MAPPING.put(accessKeyId, owner.getId());
 	}
 
 	@Override

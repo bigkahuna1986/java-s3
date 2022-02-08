@@ -17,6 +17,12 @@ import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.auth.AwsSigV4;
 import net.jolivier.s3api.model.User;
 
+/**
+ * A filter which requires all requests to be signed with the AWSV4 signature.
+ * 
+ * @author josho
+ *
+ */
 @Provider
 public class SignatureFilter implements ContainerRequestFilter {
 

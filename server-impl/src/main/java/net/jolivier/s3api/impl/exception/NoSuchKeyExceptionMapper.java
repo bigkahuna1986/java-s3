@@ -7,6 +7,12 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import net.jolivier.s3api.NoSuchKeyException;
 
+/**
+ * Maps {@link net.jolivier.s3api.NoSuchKeyException} to an http 404 response.
+ * 
+ * @author josho
+ *
+ */
 @Provider
 public class NoSuchKeyExceptionMapper implements ExceptionMapper<NoSuchKeyException> {
 
