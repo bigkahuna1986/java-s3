@@ -1,5 +1,6 @@
 package net.jolivier.s3api;
 
+import static net.jolivier.s3api.impl.RequestLogger.DEFAULT_FORMAT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -68,7 +69,7 @@ public class ApiTests {
 
 		_server = S3Server.createServer(ENDPOINT);
 
-		RequestLogger.install(_server, RequestLogger.defaultFormat());
+		RequestLogger.install(_server, DEFAULT_FORMAT);
 
 		_server.start();
 	}

@@ -11,6 +11,7 @@ import net.jolivier.s3api.http.ProjectFeature;
 import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
 import net.jolivier.s3api.http.SignatureFilter;
+import net.jolivier.s3api.impl.exception.NoSuchBucketExceptionMapper;
 import net.jolivier.s3api.impl.exception.NoSuchKeyExceptionMapper;
 import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
 
@@ -22,6 +23,7 @@ public class S3Server {
 		config.property(ServerProperties.WADL_FEATURE_DISABLE, Boolean.TRUE);
 
 		config.register(NoSuchKeyExceptionMapper.class);
+		config.register(NoSuchBucketExceptionMapper.class);
 		config.register(RequestFailedExceptionMapper.class);
 		config.register(SignatureFilter.class);
 

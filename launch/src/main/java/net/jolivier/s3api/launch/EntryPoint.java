@@ -30,7 +30,7 @@ public class EntryPoint {
 
 		Server server = S3Server.createServer(URI.create("http://" + "0.0.0.0" + ":" + 9090));
 
-		RequestLogger.install(server, RequestLogger.defaultFormat());
+		RequestLogger.install(server, RequestLogger.DEFAULT_FORMAT);
 
 		SigTerm.register(() -> {
 			server.stop();

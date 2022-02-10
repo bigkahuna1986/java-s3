@@ -7,9 +7,7 @@ import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 public class RequestLogger {
-	public static final String defaultFormat() {
-		return "%{client}a - %u \"%m %U %H\" %s %O \"%{Referer}i\" \"%{User-Agent}i\" %{ms}T";
-	}
+	public static final String DEFAULT_FORMAT = "%{client}a - %u \"%m %U %H\" %s %O \"%{Referer}i\" \"%{User-Agent}i\" %{ms}T";
 
 	public static void install(Server server, String format) {
 		final CustomRequestLog reqLog = new CustomRequestLog(new Slf4jRequestLogWriter(), format);
