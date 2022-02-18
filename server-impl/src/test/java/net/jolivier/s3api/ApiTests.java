@@ -172,6 +172,26 @@ public class ApiTests {
 		s3.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build());
 	}
 
+	@Test()
+	public void invalidBucketName() {
+		final S3ClientBuilder s3Builder = S3Client.builder()
+				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
+
+		s3Builder.region(Region.US_EAST_1).endpointOverride(ENDPOINT)
+				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+
+		final S3Client s3 = s3Builder.build();
+
+		S3Exception exception = assertThrows(S3Exception.class, () -> {
+			s3.headBucket(HeadBucketRequest.builder()
+					.bucket("totallyinvalidbucketaaaaaaaaaa_aaaaaaaaaa_aaaaaaaaaa_aaaaaaaaaa_aaaaaaaaaa_aaaaaaaaaa")
+					.build());
+		});
+
+		assertEquals("exception 400", 400, exception.statusCode());
+
+	}
+
 	@Test(expected = NoSuchBucketException.class)
 	public void noSuchBucket() {
 		final S3ClientBuilder s3Builder = S3Client.builder()
