@@ -1,6 +1,9 @@
 package net.jolivier.s3api.http;
 
+import static net.jolivier.s3api.AwsHeaders.X_AMZ_COPY_SOURCE;
+import static net.jolivier.s3api.AwsHeaders.X_AMZ_VERSION_ID;
 import static net.jolivier.s3api.http.RequestUtils.BUCKET_REGEX;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
@@ -27,6 +30,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
+import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.model.CopyObjectResult;
@@ -120,7 +124,7 @@ public class S3Objects {
 	public Response putOrCopy(@NotNull @Context User user,
 			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@NotNull @PathParam("key") String key, @HeaderParam("Content-MD5") String inputMd5,
-			@HeaderParam("Content-Type") String contentType, @HeaderParam("x-amz-copy-source") String sourceKey,
+			@HeaderParam("Content-Type") String contentType, @HeaderParam(X_AMZ_COPY_SOURCE) String sourceKey,
 			@Context ContainerRequest request) {
 
 		// copyObject
@@ -146,7 +150,7 @@ public class S3Objects {
 
 				// Send new object version back to client.
 				ResponseBuilder res = Response.ok().tag(result.etag());
-				result.versionId().ifPresent(v -> res.header("x-amz-version-id", v));
+				result.versionId().ifPresent(v -> res.header(X_AMZ_VERSION_ID, v));
 
 				return res.build();
 			} catch (IOException e) {
@@ -169,10 +173,8 @@ public class S3Objects {
 			@QueryParam("marker") String marker,
 			@DefaultValue("1000") @Max(1000) @Min(1) @QueryParam("max-keys") int maxKeys,
 			@QueryParam("prefix") String prefix) {
-		ListBucketResult results = ApiPoint.data().listObjects(user, bucket, Optional.ofNullable(delimiter),
+		return ApiPoint.data().listObjects(user, bucket, Optional.ofNullable(delimiter),
 				Optional.ofNullable(encodingType), Optional.ofNullable(marker), maxKeys, Optional.ofNullable(prefix));
-
-		return results;
 	}
 
 }

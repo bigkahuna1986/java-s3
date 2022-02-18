@@ -16,8 +16,6 @@ import net.jolivier.s3api.RequestFailedException;
  */
 public class AwsSigV4 {
 
-	public static final String X_AMZ_DATE = "x-amz-date";
-
 	private static final Pattern AWS_AUTH4_PATTERN = Pattern
 			.compile("AWS4-HMAC-SHA256 Credential=([^/]+)/([^/]+)/([^/]+)/s3/aws4_request, SignedHeaders=([^,"
 					+ "]+), Signature=(.+)");

@@ -33,9 +33,7 @@ public class S3Server {
 		config.register(S3Buckets.class);
 		config.register(S3Objects.class);
 
-		final Server server = JettyHttpContainerFactory.createServer(bindUri, config, false);
-
-		return server;
+		return JettyHttpContainerFactory.createServer(bindUri, config, false);
 	}
 
 }
