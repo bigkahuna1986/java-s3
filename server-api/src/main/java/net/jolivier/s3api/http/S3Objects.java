@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.DELETE;
@@ -127,6 +128,8 @@ public class S3Objects {
 			if (sourceKey.startsWith("/"))
 				sourceKey = sourceKey.replaceFirst("/", "");
 			final int idx = sourceKey.indexOf("/");
+			// sourceKey is in the form "/bucket/prefix/key"
+			// so we strip the first / and the bucket name off.
 			final String srcBucket = sourceKey.substring(0, idx);
 			final String srcKey = sourceKey.substring(idx + 1);
 			final CopyObjectResult result = ApiPoint.data().copyObject(user, srcBucket, srcKey, bucket, key);
@@ -141,6 +144,7 @@ public class S3Objects {
 				final PutObjectResult result = ApiPoint.data().putObject(user, bucket, key,
 						Optional.ofNullable(inputMd5), Optional.ofNullable(contentType), in);
 
+				// Send new object version back to client.
 				ResponseBuilder res = Response.ok().tag(result.etag());
 				result.versionId().ifPresent(v -> res.header("x-amz-version-id", v));
 
@@ -159,13 +163,12 @@ public class S3Objects {
 	@Path("/{bucket}")
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
-	/// ?delimiter=Delimiter&encoding-type=EncodingType&marker=Marker&max-keys=MaxKeys&prefix=Prefix
 	public ListBucketResult listObjects(@NotNull @Context User user,
 			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@QueryParam("delimiter") String delimiter, @QueryParam("encoding-type") String encodingType,
-			@QueryParam("marker") String marker, @DefaultValue("1000") @Max(1000) @QueryParam("max-keys") int maxKeys,
+			@QueryParam("marker") String marker,
+			@DefaultValue("1000") @Max(1000) @Min(1) @QueryParam("max-keys") int maxKeys,
 			@QueryParam("prefix") String prefix) {
-		maxKeys = Math.min(1000, maxKeys);
 		ListBucketResult results = ApiPoint.data().listObjects(user, bucket, Optional.ofNullable(delimiter),
 				Optional.ofNullable(encodingType), Optional.ofNullable(marker), maxKeys, Optional.ofNullable(prefix));
 
