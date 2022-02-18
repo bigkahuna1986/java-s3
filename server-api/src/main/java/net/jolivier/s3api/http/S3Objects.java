@@ -49,7 +49,7 @@ public class S3Objects {
 	@GET
 	public Response getObject(@NotNull @Context User user,
 			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
-			@NotNull @PathParam("key") String key, @HeaderParam("x-amz-version-id") String versionId) {
+			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
 		final GetObjectResult result = ApiPoint.data().getObject(user, bucket, key, Optional.ofNullable(versionId));
 		return Response.ok(result.getData()).type(result.getContentType()).tag(result.getEtag())
 				.lastModified(Date.from(result.getModified().toInstant())).build();
@@ -63,7 +63,7 @@ public class S3Objects {
 	@HEAD
 	public Response headObject(@NotNull @Context User user,
 			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
-			@NotNull @PathParam("key") String key, @HeaderParam("x-amz-version-id") String versionId) {
+			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
 		final HeadObjectResult result = ApiPoint.data().headObject(user, bucket, key, Optional.ofNullable(versionId));
 		return Response.ok().type(result.contentType()).tag(result.etag())
 				.lastModified(Date.from(result.modified().toInstant())).build();
