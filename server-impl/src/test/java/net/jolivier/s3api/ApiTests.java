@@ -65,6 +65,7 @@ public class ApiTests {
 
 	@BeforeClass
 	public static void startup() throws Exception {
+		S3MemoryImpl.configure(true);
 		ApiPoint.configure(S3MemoryImpl.INSTANCE, S3MemoryImpl.INSTANCE);
 
 		_server = S3Server.createServer(ENDPOINT);
