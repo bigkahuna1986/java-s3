@@ -1,8 +1,10 @@
 package net.jolivier.s3api.http;
 
+import static net.jolivier.s3api.http.RequestUtils.BUCKET_REGEX;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -34,7 +36,8 @@ public class S3Buckets {
 	 */
 	@Path("/{bucket}")
 	@HEAD
-	public Response headBucket(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket) {
+	public Response headBucket(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket) {
 		final boolean result = ApiPoint.data().headBucket(user, bucket);
 		return result ? Response.ok().build() : Response.status(404).build();
 	}
@@ -48,7 +51,8 @@ public class S3Buckets {
 	@Path("/{bucket}")
 	@PUT
 	@Consumes(MediaType.APPLICATION_XML)
-	public Response createBucket(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket,
+	public Response createBucket(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@Context ContainerRequest req) {
 		String location = "us-east-1";
 		if (req.hasEntity()) {
@@ -72,7 +76,8 @@ public class S3Buckets {
 	 */
 	@Path("/{bucket}")
 	@DELETE
-	public Response deleteBucket(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket) {
+	public Response deleteBucket(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket) {
 		final boolean result = ApiPoint.data().deleteBucket(user, bucket);
 		if (!result)
 			throw new RequestFailedException();

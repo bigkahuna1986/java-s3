@@ -20,6 +20,8 @@ import uk.co.lucasweb.aws.v4.signer.credentials.AwsCredentials;
 public enum RequestUtils {
 	;
 
+	public static final String BUCKET_REGEX = "(?=^.{3,63}$)(?!^(\\d+\\.)+\\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])$)";
+
 	@SuppressWarnings("unchecked")
 	public static <T> T readJaxbEntity(Class<T> cls, InputStream input) {
 

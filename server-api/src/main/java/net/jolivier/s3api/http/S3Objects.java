@@ -1,5 +1,6 @@
 package net.jolivier.s3api.http;
 
+import static net.jolivier.s3api.http.RequestUtils.BUCKET_REGEX;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
@@ -7,7 +8,9 @@ import java.util.Optional;
 
 import org.glassfish.jersey.server.ContainerRequest;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -44,7 +47,8 @@ public class S3Objects {
 	 */
 	@Path("/{bucket}/{key: .*}")
 	@GET
-	public Response getObject(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket,
+	public Response getObject(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@NotNull @PathParam("key") String key, @HeaderParam("x-amz-version-id") String versionId) {
 		final GetObjectResult result = ApiPoint.data().getObject(user, bucket, key, Optional.ofNullable(versionId));
 		return Response.ok(result.getData()).type(result.getContentType()).tag(result.getEtag())
@@ -57,7 +61,8 @@ public class S3Objects {
 	 */
 	@Path("/{bucket}/{key: .*}")
 	@HEAD
-	public Response headObject(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket,
+	public Response headObject(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@NotNull @PathParam("key") String key, @HeaderParam("x-amz-version-id") String versionId) {
 		final HeadObjectResult result = ApiPoint.data().headObject(user, bucket, key, Optional.ofNullable(versionId));
 		return Response.ok().type(result.contentType()).tag(result.etag())
@@ -71,7 +76,8 @@ public class S3Objects {
 	 */
 	@Path("/{bucket}/{key: .*}")
 	@DELETE
-	public Response deleteObject(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket,
+	public Response deleteObject(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
 		final boolean result = ApiPoint.data().deleteObject(user, bucket, key, Optional.ofNullable(versionId));
 
@@ -84,7 +90,8 @@ public class S3Objects {
 	@Path("/{bucket}")
 	@POST
 	@Produces(MediaType.APPLICATION_XML)
-	public DeleteResult deleteObjects(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket,
+	public DeleteResult deleteObjects(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@Context ContainerRequest request) {
 
 		if (!request.getUriInfo().getQueryParameters().containsKey("delete"))
@@ -109,7 +116,8 @@ public class S3Objects {
 	 */
 	@Path("/{bucket}/{key: .*}")
 	@PUT
-	public Response putOrCopy(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket,
+	public Response putOrCopy(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@NotNull @PathParam("key") String key, @HeaderParam("Content-MD5") String inputMd5,
 			@HeaderParam("Content-Type") String contentType, @HeaderParam("x-amz-copy-source") String sourceKey,
 			@Context ContainerRequest request) {
@@ -152,9 +160,10 @@ public class S3Objects {
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
 	/// ?delimiter=Delimiter&encoding-type=EncodingType&marker=Marker&max-keys=MaxKeys&prefix=Prefix
-	public ListBucketResult listObjects(@NotNull @Context User user, @NotNull @PathParam("bucket") String bucket,
+	public ListBucketResult listObjects(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@QueryParam("delimiter") String delimiter, @QueryParam("encoding-type") String encodingType,
-			@QueryParam("marker") String marker, @DefaultValue("1000") @QueryParam("max-keys") int maxKeys,
+			@QueryParam("marker") String marker, @DefaultValue("1000") @Max(1000) @QueryParam("max-keys") int maxKeys,
 			@QueryParam("prefix") String prefix) {
 		maxKeys = Math.min(1000, maxKeys);
 		ListBucketResult results = ApiPoint.data().listObjects(user, bucket, Optional.ofNullable(delimiter),
