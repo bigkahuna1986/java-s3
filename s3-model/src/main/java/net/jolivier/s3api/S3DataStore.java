@@ -1,6 +1,7 @@
 package net.jolivier.s3api;
 
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Optional;
 
 import net.jolivier.s3api.model.CopyObjectResult;
@@ -10,6 +11,7 @@ import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
 import net.jolivier.s3api.model.ListBucketResult;
+import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
 
@@ -46,11 +48,16 @@ public interface S3DataStore {
 	public DeleteResult deleteObjects(User user, String bucket, DeleteObjectsRequest request);
 
 	public PutObjectResult putObject(User user, String bucket, String key, Optional<String> inputMd5,
-			Optional<String> contentType, InputStream data);
+			Optional<String> contentType, Map<String, String> metadata, InputStream data);
 
-	public CopyObjectResult copyObject(User user, String srcBucket, String srcKey, String dstBucket, String dstKey);
+	public CopyObjectResult copyObject(User user, String srcBucket, String srcKey, String dstBucket, String dstKey,
+			boolean copyMetadata, Map<String, String> newMetadata);
 
 	public ListBucketResult listObjects(User user, String bucket, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, int maxKeys, Optional<String> prefix);
+
+	public ListVersionsResult listObjectVersions(User user, String bucket, Optional<String> delimiter,
+			Optional<String> encodingType, Optional<String> marker, Optional<String> versionIdMarker, int maxKeys,
+			Optional<String> prefix);
 
 }

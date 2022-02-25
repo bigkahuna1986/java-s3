@@ -1,11 +1,14 @@
 package net.jolivier.s3api.http;
 
+import static java.util.Optional.ofNullable;
 import static net.jolivier.s3api.AwsHeaders.X_AMZ_COPY_SOURCE;
 import static net.jolivier.s3api.AwsHeaders.X_AMZ_VERSION_ID;
 import static net.jolivier.s3api.http.RequestUtils.BUCKET_REGEX;
+import static net.jolivier.s3api.http.RequestUtils.metadataHeaders;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
 
@@ -30,6 +33,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
+import net.jolivier.s3api.AwsHeaders;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
@@ -39,6 +43,7 @@ import net.jolivier.s3api.model.DeleteResult;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListBucketResult;
+import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
 
@@ -56,7 +61,8 @@ public class S3Objects {
 			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
 		final GetObjectResult result = ApiPoint.data().getObject(user, bucket, key, Optional.ofNullable(versionId));
-		return Response.ok(result.getData()).type(result.getContentType()).tag(result.getEtag())
+		return RequestUtils.writeMetadataHeaders(Response.ok(result.getData()), result.getMetadata())
+				.type(result.getContentType()).tag(result.getEtag())
 				.lastModified(Date.from(result.getModified().toInstant())).build();
 	}
 
@@ -70,8 +76,8 @@ public class S3Objects {
 			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
 		final HeadObjectResult result = ApiPoint.data().headObject(user, bucket, key, Optional.ofNullable(versionId));
-		return Response.ok().type(result.contentType()).tag(result.etag())
-				.lastModified(Date.from(result.modified().toInstant())).build();
+		return RequestUtils.writeMetadataHeaders(Response.ok(), result.getMetadata()).type(result.contentType())
+				.tag(result.etag()).lastModified(Date.from(result.modified().toInstant())).build();
 	}
 
 	/**
@@ -136,7 +142,9 @@ public class S3Objects {
 			// so we strip the first / and the bucket name off.
 			final String srcBucket = sourceKey.substring(0, idx);
 			final String srcKey = sourceKey.substring(idx + 1);
-			final CopyObjectResult result = ApiPoint.data().copyObject(user, srcBucket, srcKey, bucket, key);
+			final boolean copyMetadata = "replace".equals(request.getHeaderString(AwsHeaders.X_AMZ_METADATA_DIRECTIVE));
+			final CopyObjectResult result = ApiPoint.data().copyObject(user, srcBucket, srcKey, bucket, key,
+					copyMetadata, copyMetadata ? Collections.emptyMap() : RequestUtils.metadataHeaders(request));
 
 			return Response.ok(result).build();
 		}
@@ -146,7 +154,7 @@ public class S3Objects {
 			try (InputStream in = new ChunkedInputStream(request.getEntityStream())) {
 
 				final PutObjectResult result = ApiPoint.data().putObject(user, bucket, key,
-						Optional.ofNullable(inputMd5), Optional.ofNullable(contentType), in);
+						Optional.ofNullable(inputMd5), Optional.ofNullable(contentType), metadataHeaders(request), in);
 
 				// Send new object version back to client.
 				ResponseBuilder res = Response.ok().tag(result.etag());
@@ -175,6 +183,24 @@ public class S3Objects {
 			@QueryParam("prefix") String prefix) {
 		return ApiPoint.data().listObjects(user, bucket, Optional.ofNullable(delimiter),
 				Optional.ofNullable(encodingType), Optional.ofNullable(marker), maxKeys, Optional.ofNullable(prefix));
+	}
+
+	/**
+	 * List the object versions in a bucket. Enforces a maxKeys 1000 value.
+	 * 
+	 * @throws NoSuchBucketException if the bucket does not exist.
+	 */
+	@Path("/{bucket}")
+	@GET
+	@Produces(MediaType.APPLICATION_XML)
+	public ListVersionsResult listObjectVersions(@NotNull @Context User user,
+			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
+			@QueryParam("delimiter") String delimiter, @QueryParam("encoding-type") String encodingType,
+			@QueryParam("marker") String marker, @QueryParam("VersionIdMarker") String versionIdMarker,
+			@DefaultValue("1000") @Max(1000) @Min(1) @QueryParam("max-keys") int maxKeys,
+			@QueryParam("prefix") String prefix) {
+		return ApiPoint.data().listObjectVersions(user, bucket, ofNullable(delimiter), ofNullable(encodingType),
+				ofNullable(marker), ofNullable(versionIdMarker), maxKeys, ofNullable(prefix));
 	}
 
 }

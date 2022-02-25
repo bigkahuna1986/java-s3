@@ -6,6 +6,7 @@ S3 objects/xml structures are stored in the s3-model sub project, the jersey API
 Any application can implement the S3DataStore and S3AuthStore interfaces and attach via ApiPoint. 
 The rest can be started as a jetty/jersey server to handle any requests.
 
-This is not intended to be a AWS/Ceph replacement, more just a testing tool.
-
+If you're interested in a plain S3 backend for testing, you may investigate LocalStack. This
+project focuses on allowing devs to create custom backends and specific handling, allowing them
+to create custom unit tests.
 

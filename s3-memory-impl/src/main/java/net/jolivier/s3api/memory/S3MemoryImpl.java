@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -37,7 +38,9 @@ import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
 import net.jolivier.s3api.model.ListBucketResult;
 import net.jolivier.s3api.model.ListObject;
+import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.ObjectIdentifier;
+import net.jolivier.s3api.model.ObjectVersion;
 import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
@@ -46,6 +49,8 @@ import net.jolivier.s3api.model.User;
  * Basic implementation of the S3DataStore and S3AuthStore. This impl only
  * stores object, users, and accounts in memory. There is no way to serialize
  * this class.
+ * 
+ * Does not support object versions.
  * 
  * Generally should only use this impl for testing.
  * 
@@ -76,17 +81,20 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		}
 	}
 
-	private static final class Metadata {
+	private static final class StoredObject {
 		private final byte[] _data;
 		private final String _contentType;
 		private final String _etag;
 		private final ZonedDateTime _modified;
+		private final Map<String, String> _metadata;
 
-		public Metadata(byte[] data, String contentType, String etag, ZonedDateTime modified) {
+		public StoredObject(byte[] data, String contentType, String etag, ZonedDateTime modified,
+				Map<String, String> metadata) {
 			_data = data;
 			_contentType = contentType;
 			_etag = etag;
 			_modified = modified;
+			_metadata = metadata;
 		}
 
 		public byte[] data() {
@@ -105,6 +113,10 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 			return _modified;
 		}
 
+		public Map<String, String> getMetadata() {
+			return _metadata;
+		}
+
 	}
 
 	private static final class OwnedBucket {
@@ -121,7 +133,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		}
 	}
 
-	private static final Map<String, Map<String, Metadata>> MAP = new ConcurrentHashMap<>();
+	private static final Map<String, Map<String, StoredObject>> MAP = new ConcurrentHashMap<>();
 	private static final Map<String, OwnedBucket> BUCKETS = new ConcurrentHashMap<String, OwnedBucket>();
 
 	private static final Owner assertOwner(User user, String bucket) {
@@ -199,7 +211,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	@Override
 	public boolean createBucket(User user, String bucket, String location) {
-		Map<String, Metadata> prev = MAP.putIfAbsent(bucket, new ConcurrentHashMap<>());
+		Map<String, StoredObject> prev = MAP.putIfAbsent(bucket, new ConcurrentHashMap<>());
 		if (prev == null) {
 			Owner owner = findOwner(user);
 			BUCKETS.put(bucket, new OwnedBucket(new Bucket(bucket, ZonedDateTime.now()), owner));
@@ -228,12 +240,12 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	public GetObjectResult getObject(User user, String bucket, String key, Optional<String> versionId) {
 		assertOwner(user, bucket);
 
-		Map<String, Metadata> objects = MAP.get(bucket);
+		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
-			Metadata metadata = objects.get(key);
-			if (metadata != null)
-				return new GetObjectResult(metadata.contentType(), metadata.etag(), metadata.modified(),
-						new ByteArrayInputStream(metadata.data()));
+			StoredObject stored = objects.get(key);
+			if (stored != null)
+				return new GetObjectResult(stored.contentType(), stored.etag(), stored.modified(), stored.getMetadata(),
+						new ByteArrayInputStream(stored.data()));
 		}
 
 		throw new NoSuchKeyException();
@@ -243,11 +255,12 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	public HeadObjectResult headObject(User user, String bucket, String key, Optional<String> versionId) {
 		assertOwner(user, bucket);
 
-		Map<String, Metadata> objects = MAP.get(bucket);
+		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
-			Metadata metadata = objects.get(key);
-			if (metadata != null)
-				return new HeadObjectResult(metadata.contentType(), metadata.etag(), metadata.modified());
+			StoredObject stored = objects.get(key);
+			if (stored != null)
+				return new HeadObjectResult(stored.contentType(), stored.etag(), stored.modified(),
+						stored.getMetadata());
 		}
 
 		throw new NoSuchKeyException();
@@ -257,9 +270,9 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	public boolean deleteObject(User user, String bucket, String key, Optional<String> versionId) {
 		assertOwner(user, bucket);
 
-		Map<String, Metadata> objects = MAP.get(bucket);
+		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
-			Metadata prev = objects.remove(key);
+			StoredObject prev = objects.remove(key);
 			return prev != null;
 		}
 
@@ -270,13 +283,13 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	public DeleteResult deleteObjects(User user, String bucket, DeleteObjectsRequest request) {
 		assertOwner(user, bucket);
 
-		Map<String, Metadata> objects = MAP.get(bucket);
+		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
 			List<Deleted> deleted = new LinkedList<>();
 			List<DeleteError> errors = new LinkedList<>();
 
 			for (ObjectIdentifier oi : request.getObjects()) {
-				Metadata prev = objects.remove(oi.getKey());
+				StoredObject prev = objects.remove(oi.getKey());
 				if (prev != null)
 					deleted.add(new Deleted(oi.getKey()));
 				else
@@ -291,19 +304,19 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	@Override
 	public PutObjectResult putObject(User user, String bucket, String key, Optional<String> inputMd5,
-			Optional<String> contentType, InputStream data) {
+			Optional<String> contentType, Map<String, String> metadata, InputStream data) {
 		assertOwner(user, bucket);
 
-		Map<String, Metadata> objects = MAP.get(bucket);
+		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			try {
 				data.transferTo(baos);
 				byte[] bytes = baos.toByteArray();
-				Metadata meta = new Metadata(bytes, contentType.orElse("application/octet-stream"),
+				StoredObject meta = new StoredObject(bytes, contentType.orElse("application/octet-stream"),
 						inputMd5.orElseGet(
 								() -> BaseEncoding.base16().encode(Hashing.md5().hashBytes(bytes).asBytes())),
-						ZonedDateTime.now());
+						ZonedDateTime.now(), metadata);
 				objects.put(key, meta);
 
 				return new PutObjectResult(meta.etag(), Optional.empty());
@@ -316,7 +329,8 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public CopyObjectResult copyObject(User user, String srcBucket, String srcKey, String dstBucket, String dstKey) {
+	public CopyObjectResult copyObject(User user, String srcBucket, String srcKey, String dstBucket, String dstKey,
+			boolean copyMetadata, Map<String, String> newMetadata) {
 		assertOwner(user, srcBucket);
 		assertOwner(user, dstBucket);
 
@@ -326,8 +340,10 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		if (!BUCKETS.containsKey(dstBucket))
 			throw new NoSuchBucketException(dstBucket);
 
-		Metadata source = MAP.get(srcBucket).get(srcKey);
-		MAP.get(dstBucket).put(dstKey, source);
+		final StoredObject source = MAP.get(srcBucket).get(srcKey);
+		final StoredObject dest = new StoredObject(source._data, source._contentType, source.etag(), source.modified(),
+				copyMetadata ? source._metadata : newMetadata);
+		MAP.get(dstBucket).put(dstKey, dest);
 
 		return new CopyObjectResult(source.etag(), source.modified());
 	}
@@ -337,7 +353,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 			Optional<String> encodingType, Optional<String> marker, int maxKeys, Optional<String> prefix) {
 		Owner owner = assertOwner(user, bucket);
 
-		Map<String, Metadata> objects = MAP.get(bucket);
+		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects == null)
 			throw new NoSuchBucketException(bucket);
 
@@ -364,7 +380,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		Set<String> commonPrefixes = new HashSet<>();
 		for (int i = startIndex; i < endIndex; ++i) {
 			String key = keys.get(i);
-			Metadata metadata = objects.get(key);
+			StoredObject metadata = objects.get(key);
 			list.add(new ListObject(metadata.etag(), key, metadata.modified(), owner, metadata.data().length));
 		}
 
@@ -373,6 +389,48 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 				new ArrayList<>(commonPrefixes), list);
 
 		return result;
+	}
+
+	@Override
+	public ListVersionsResult listObjectVersions(User user, String bucket, Optional<String> delimiter,
+			Optional<String> encodingType, Optional<String> marker, Optional<String> versionIdMarker, int maxKeys,
+			Optional<String> prefix) {
+		Owner owner = assertOwner(user, bucket);
+
+		Map<String, StoredObject> objects = MAP.get(bucket);
+		if (objects == null)
+			throw new NoSuchBucketException(bucket);
+
+		final List<String> keys = new ArrayList<>(prefix.isPresent()
+				? objects.keySet().stream().filter(k -> k.startsWith(prefix.get())).collect(Collectors.toList())
+				: objects.keySet());
+		// Has to be natural order for ASCII order.
+		keys.sort(Comparator.naturalOrder());
+
+		int startIndex = 0;
+		if (marker.isPresent()) {
+			int idx = keys.indexOf(marker.get());
+			if (idx >= 0)
+				startIndex = idx;
+		}
+
+		final int endIndex = Math.min(maxKeys, keys.size());
+		boolean truncated = endIndex < keys.size();
+		String nextMarker = null;
+		if (truncated)
+			nextMarker = keys.get(endIndex);
+
+		List<ObjectVersion> list = new ArrayList<>(keys.size());
+		for (int i = startIndex; i < endIndex; ++i) {
+			String key = keys.get(i);
+			StoredObject metadata = objects.get(key);
+			list.add(new ObjectVersion(owner, key, bucket, true, metadata.modified(), metadata.etag(),
+					(long) metadata.data().length, "STANDARD"));
+		}
+
+		return new ListVersionsResult(truncated, marker.orElse(null), nextMarker, bucket, prefix.orElse(null),
+				delimiter.orElse(null), encodingType.orElse(null), null, maxKeys,
+				prefix.map(Collections::singletonList).orElse(null), list);
 	}
 
 }
