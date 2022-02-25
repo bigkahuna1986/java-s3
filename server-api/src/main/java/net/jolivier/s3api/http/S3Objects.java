@@ -42,7 +42,6 @@ import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
-import net.jolivier.s3api.model.ListBucketResult;
 import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
@@ -165,24 +164,6 @@ public class S3Objects {
 				throw new RequestFailedException(e);
 			}
 		}
-	}
-
-	/**
-	 * List the objects in a bucket. Enforces a maxKeys 1000 value.
-	 * 
-	 * @throws NoSuchBucketException if the bucket does not exist.
-	 */
-	@Path("/{bucket}")
-	@GET
-	@Produces(MediaType.APPLICATION_XML)
-	public ListBucketResult listObjects(@NotNull @Context User user,
-			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
-			@QueryParam("delimiter") String delimiter, @QueryParam("encoding-type") String encodingType,
-			@QueryParam("marker") String marker,
-			@DefaultValue("1000") @Max(1000) @Min(1) @QueryParam("max-keys") int maxKeys,
-			@QueryParam("prefix") String prefix) {
-		return ApiPoint.data().listObjects(user, bucket, Optional.ofNullable(delimiter),
-				Optional.ofNullable(encodingType), Optional.ofNullable(marker), maxKeys, Optional.ofNullable(prefix));
 	}
 
 	/**

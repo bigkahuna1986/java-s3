@@ -12,8 +12,10 @@ import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
 import net.jolivier.s3api.model.ListBucketResult;
 import net.jolivier.s3api.model.ListVersionsResult;
+import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
+import net.jolivier.s3api.model.VersioningConfiguration;
 
 /**
  * All methods in this interface correspond to their counterparts listed in the
@@ -31,6 +33,7 @@ import net.jolivier.s3api.model.User;
  */
 public interface S3DataStore {
 
+	// buckets
 	public boolean headBucket(User user, String bucket);
 
 	public boolean createBucket(User user, String bucket, String location);
@@ -39,6 +42,17 @@ public interface S3DataStore {
 
 	public ListAllMyBucketsResult listBuckets(User user);
 
+	public VersioningConfiguration getBucketVersioning(User user, String bucket);
+
+	public boolean putBucketVersioning(User user, String bucket, VersioningConfiguration config);
+
+	public PublicAccessBlockConfiguration getPublicAccessBlock(User user, String bucket);
+
+	public boolean putPublicAccessBlock(User user, String bucket, PublicAccessBlockConfiguration config);
+	
+	public boolean deletePublicAccessBlock(User user, String bucket);
+
+	// objects
 	public GetObjectResult getObject(User user, String bucket, String key, Optional<String> versionId);
 
 	public HeadObjectResult headObject(User user, String bucket, String key, Optional<String> versionId);

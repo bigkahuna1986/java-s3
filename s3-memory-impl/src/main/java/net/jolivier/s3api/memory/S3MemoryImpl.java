@@ -42,8 +42,10 @@ import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.ObjectIdentifier;
 import net.jolivier.s3api.model.ObjectVersion;
 import net.jolivier.s3api.model.Owner;
+import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
+import net.jolivier.s3api.model.VersioningConfiguration;
 
 /**
  * Basic implementation of the S3DataStore and S3AuthStore. This impl only
@@ -150,6 +152,20 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
+	public VersioningConfiguration getBucketVersioning(User user, String bucket) {
+		assertOwner(user, bucket);
+		// Versioning not supported here.
+		return VersioningConfiguration.disabled();
+	}
+
+	@Override
+	public boolean putBucketVersioning(User user, String bucket, VersioningConfiguration config) {
+		assertOwner(user, bucket);
+		// Versioning not supported here.
+		return false;
+	}
+
+	@Override
 	public User user(String accessKeyId) {
 		User user = USERS.get(accessKeyId);
 		if (user != null)
@@ -206,6 +222,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	@Override
 	public boolean headBucket(User user, String bucket) {
+		assertOwner(user, bucket);
 		return MAP.containsKey(bucket);
 	}
 
@@ -234,6 +251,25 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		List<Bucket> buckets = BUCKETS.values().stream().filter(ob -> ob.owner.getId().equals(owner.getId()))
 				.map(OwnedBucket::bucket).collect(Collectors.toList());
 		return new ListAllMyBucketsResult(buckets, owner);
+	}
+
+	// Public access blocks not supported on this implementation
+	@Override
+	public PublicAccessBlockConfiguration getPublicAccessBlock(User user, String bucket) {
+		assertOwner(user, bucket);
+		return new PublicAccessBlockConfiguration(true, true, true, true);
+	}
+
+	@Override
+	public boolean putPublicAccessBlock(User user, String bucket, PublicAccessBlockConfiguration config) {
+		assertOwner(user, bucket);
+		return false;
+	}
+
+	@Override
+	public boolean deletePublicAccessBlock(User user, String bucket) {
+		assertOwner(user, bucket);
+		return false;
 	}
 
 	@Override
