@@ -255,6 +255,11 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	// Public access blocks not supported on this implementation
 	@Override
+	public PublicAccessBlockConfiguration internalPublicAccessBlock(String bucket) {
+		return new PublicAccessBlockConfiguration(true, true, true, true);
+	}
+
+	@Override
 	public PublicAccessBlockConfiguration getPublicAccessBlock(User user, String bucket) {
 		assertOwner(user, bucket);
 		return new PublicAccessBlockConfiguration(true, true, true, true);

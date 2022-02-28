@@ -31,8 +31,10 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.AwsHeaders;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.NoSuchKeyException;
@@ -42,7 +44,6 @@ import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
-import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
 
@@ -167,21 +168,37 @@ public class S3Objects {
 	}
 
 	/**
-	 * List the object versions in a bucket. Enforces a maxKeys 1000 value.
+	 * List the objects in a bucket. Enforces a maxKeys 1000 value.
 	 * 
 	 * @throws NoSuchBucketException if the bucket does not exist.
 	 */
 	@Path("/{bucket}")
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
-	public ListVersionsResult listObjectVersions(@NotNull @Context User user,
+	public Response listObjects(@NotNull @Context User user,
 			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket,
 			@QueryParam("delimiter") String delimiter, @QueryParam("encoding-type") String encodingType,
 			@QueryParam("marker") String marker, @QueryParam("VersionIdMarker") String versionIdMarker,
 			@DefaultValue("1000") @Max(1000) @Min(1) @QueryParam("max-keys") int maxKeys,
-			@QueryParam("prefix") String prefix) {
-		return ApiPoint.data().listObjectVersions(user, bucket, ofNullable(delimiter), ofNullable(encodingType),
-				ofNullable(marker), ofNullable(versionIdMarker), maxKeys, ofNullable(prefix));
+			@QueryParam("prefix") String prefix, @Context UriInfo uriInfo) {
+
+		final MultivaluedMap<String, String> query = uriInfo.getQueryParameters();
+
+		if (query.containsKey("versioning"))
+			return Response.ok(ApiPoint.data().getBucketVersioning(user, bucket)).build();
+
+		if (query.containsKey("publicAccessBlock"))
+			return Response.ok(ApiPoint.data().getPublicAccessBlock(user, bucket)).build();
+
+		if (query.containsKey("versions"))
+			return Response.ok(
+					ApiPoint.data().listObjectVersions(user, bucket, ofNullable(delimiter), ofNullable(encodingType),
+							ofNullable(marker), ofNullable(versionIdMarker), maxKeys, ofNullable(prefix)))
+					.build();
+
+		return Response.ok(ApiPoint.data().listObjects(user, bucket, Optional.ofNullable(delimiter),
+				Optional.ofNullable(encodingType), Optional.ofNullable(marker), maxKeys, Optional.ofNullable(prefix)))
+				.build();
 	}
 
 }

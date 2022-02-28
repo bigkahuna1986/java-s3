@@ -7,6 +7,7 @@ import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
 
+import net.jolivier.s3api.http.PathMatchingFilter;
 import net.jolivier.s3api.http.ProjectFeature;
 import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
@@ -25,6 +26,7 @@ public class S3Server {
 		config.register(NoSuchKeyExceptionMapper.class);
 		config.register(NoSuchBucketExceptionMapper.class);
 		config.register(RequestFailedExceptionMapper.class);
+		config.register(PathMatchingFilter.class);
 		config.register(SignatureFilter.class);
 
 		config.register(ProjectFeature.class);

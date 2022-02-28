@@ -46,10 +46,12 @@ public interface S3DataStore {
 
 	public boolean putBucketVersioning(User user, String bucket, VersioningConfiguration config);
 
+	public PublicAccessBlockConfiguration internalPublicAccessBlock(String bucket);
+
 	public PublicAccessBlockConfiguration getPublicAccessBlock(User user, String bucket);
 
 	public boolean putPublicAccessBlock(User user, String bucket, PublicAccessBlockConfiguration config);
-	
+
 	public boolean deletePublicAccessBlock(User user, String bucket);
 
 	// objects
