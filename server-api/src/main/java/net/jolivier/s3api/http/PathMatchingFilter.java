@@ -18,7 +18,6 @@ import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.Provider;
 import net.jolivier.s3api.http.context.RequestBucket;
-import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 
 @Provider
 @PreMatching
@@ -33,12 +32,14 @@ public class PathMatchingFilter implements ContainerRequestFilter {
 	public void filter(ContainerRequestContext ctx) throws IOException {
 		final UriInfo uriInfo = ctx.getUriInfo();
 
-		_logger.info("req {}", uriInfo.getRequestUri());
-
 		final List<PathSegment> segments = uriInfo.getPathSegments();
-		final String bucket = segments.get(0).getPath();
 
-		final UriBuilder builder = UriBuilder.fromUri(uriInfo.getRequestUri())
+		_logger.info("segments {}", segments);
+
+		final String bucket = segments.isEmpty() ? "" : segments.get(0).getPath();
+
+		final URI requestUri = uriInfo.getRequestUri();
+		final UriBuilder builder = UriBuilder.fromUri(requestUri)
 				.replacePath(
 						segments.size() > 1
 								? String.join("/", segments.subList(1, segments.size() - 1).stream()
@@ -46,11 +47,10 @@ public class PathMatchingFilter implements ContainerRequestFilter {
 								: "/");
 
 		final URI baseUri = uriInfo.getBaseUri();
-		URI nextUri = builder.build();
-		_logger.info("setRequestUri(\"{}\",\"{}\"):{}", nextUri, baseUri, bucket);
-		ctx.setRequestUri(baseUri, nextUri);
 		ctx.setProperty("bucket", RequestBucket.of(bucket));
-		PublicAccessBlockConfiguration accessPolicy = ApiPoint.data().internalPublicAccessBlock(bucket);
+		ctx.setProperty(SignatureFilter.ORIG_URI, requestUri);
+		ctx.setRequestUri(baseUri, builder.build());
+
 	}
 
 }

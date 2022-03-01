@@ -16,6 +16,7 @@ public enum ApiPoint {
 
 	private static S3DataStore _data;
 	private static S3AuthStore _auth;
+	private static String _domainBase;
 
 	/**
 	 * Must be configured with a non-null data store and auth store.
@@ -24,8 +25,21 @@ public enum ApiPoint {
 	 * @param auth
 	 */
 	public static void configure(S3DataStore data, S3AuthStore auth) {
+		configure(data, auth, null);
+	}
+
+	/**
+	 * Must be configured with a non-null data store and auth store.
+	 * 
+	 * domainBase can be null.
+	 * 
+	 * @param data
+	 * @param auth
+	 */
+	public static void configure(S3DataStore data, S3AuthStore auth, String domainBase) {
 		_data = Objects.requireNonNull(data, "data");
 		_auth = Objects.requireNonNull(auth, "auth");
+		_domainBase = domainBase;
 	}
 
 	public static S3DataStore data() {
@@ -34,6 +48,10 @@ public enum ApiPoint {
 
 	public static S3AuthStore auth() {
 		return _auth;
+	}
+
+	public static String domainBase() {
+		return _domainBase;
 	}
 
 }

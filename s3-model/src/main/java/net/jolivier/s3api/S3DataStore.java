@@ -46,7 +46,7 @@ public interface S3DataStore {
 
 	public boolean putBucketVersioning(User user, String bucket, VersioningConfiguration config);
 
-	public PublicAccessBlockConfiguration internalPublicAccessBlock(String bucket);
+	public Optional<PublicAccessBlockConfiguration> internalPublicAccessBlock(String bucket);
 
 	public PublicAccessBlockConfiguration getPublicAccessBlock(User user, String bucket);
 

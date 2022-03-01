@@ -1,27 +1,22 @@
 package net.jolivier.s3api.http;
 
-import static net.jolivier.s3api.http.RequestUtils.BUCKET_REGEX;
-
 import org.glassfish.jersey.server.ContainerRequest;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HEAD;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.RequestFailedException;
+import net.jolivier.s3api.http.context.RequestBucket;
 import net.jolivier.s3api.model.CreateBucketConfiguration;
-import net.jolivier.s3api.model.ListAllMyBucketsResult;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.User;
 import net.jolivier.s3api.model.VersioningConfiguration;
@@ -39,11 +34,11 @@ public class S3Buckets {
 	 * Head bucket, returns 200 or 404.
 	 * 
 	 */
-	@Path("/{bucket}")
+	@Path("/")
 	@HEAD
-	public Response headBucket(@NotNull @Context User user,
-			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket) {
-		final boolean result = ApiPoint.data().headBucket(user, bucket);
+	@BucketOptional
+	public Response headBucket(@NotNull @Context User user, @Context RequestBucket bucket) {
+		final boolean result = ApiPoint.data().headBucket(user, bucket.name());
 		return result ? Response.ok().build() : Response.status(404).build();
 	}
 
@@ -53,18 +48,18 @@ public class S3Buckets {
 	 * @throws RequestFailedException if the bucket already exists.
 	 * 
 	 */
-	@Path("/{bucket}")
+	@Path("/")
 	@PUT
 	@Consumes(MediaType.APPLICATION_XML)
-	public Response createBucket(@NotNull @Context User user,
-			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket, @Context ContainerRequest req,
-			@Context UriInfo uriInfo) {
+	@BucketOptional
+	public Response createBucket(@NotNull @Context User user, @Context RequestBucket bucket,
+			@Context ContainerRequest req, @Context UriInfo uriInfo) {
 
 		if (uriInfo.getQueryParameters().containsKey("versioning")) {
 			VersioningConfiguration config = RequestUtils.readJaxbEntity(VersioningConfiguration.class,
 					req.getEntityStream());
 
-			if (!ApiPoint.data().putBucketVersioning(user, bucket, config))
+			if (!ApiPoint.data().putBucketVersioning(user, bucket.name(), config))
 				throw new RequestFailedException();
 
 			return Response.ok().build();
@@ -74,7 +69,7 @@ public class S3Buckets {
 			PublicAccessBlockConfiguration config = RequestUtils.readJaxbEntity(PublicAccessBlockConfiguration.class,
 					req.getEntityStream());
 
-			if (!ApiPoint.data().putPublicAccessBlock(user, bucket, config))
+			if (!ApiPoint.data().putPublicAccessBlock(user, bucket.name(), config))
 				throw new RequestFailedException();
 
 			return Response.ok().build();
@@ -86,7 +81,7 @@ public class S3Buckets {
 					req.getEntityStream());
 			location = config.getLocation();
 		}
-		if (!ApiPoint.data().createBucket(user, bucket, location))
+		if (!ApiPoint.data().createBucket(user, bucket.name(), location))
 			throw new RequestFailedException();
 
 		return Response.ok().build();
@@ -98,35 +93,23 @@ public class S3Buckets {
 	 * @throws NoSuchBucketException if the bucket does not exists.
 	 * 
 	 */
-	@Path("/{bucket}")
+	@Path("/")
 	@DELETE
-	public Response deleteBucket(@NotNull @Context User user,
-			@NotNull @Pattern(regexp = BUCKET_REGEX) @PathParam("bucket") String bucket, @Context UriInfo uriInfo) {
+	public Response deleteBucket(@NotNull @Context User user, @Context RequestBucket bucket, @Context UriInfo uriInfo) {
 
 		if (uriInfo.getQueryParameters().containsKey("publicAccessBlock")) {
-			if (!ApiPoint.data().deletePublicAccessBlock(user, bucket))
+			if (!ApiPoint.data().deletePublicAccessBlock(user, bucket.name()))
 				throw new RequestFailedException();
 
-			return Response.ok().build();
+			return Response.noContent().build();
 		}
 
-		if (!ApiPoint.data().deleteBucket(user, bucket))
+		if (!ApiPoint.data().deleteBucket(user, bucket.name()))
 			throw new RequestFailedException();
 
-		return Response.ok().build();
+		return Response.noContent().build();
 	}
 
-	/**
-	 * List buckets for an account.
-	 * 
-	 */
-	@Path("/")
-	@GET
-	@Produces(MediaType.APPLICATION_XML)
-	public ListAllMyBucketsResult listBuckets(@NotNull @Context User user) {
-		final ListAllMyBucketsResult result = ApiPoint.data().listBuckets(user);
 
-		return result;
-	}
 
 }

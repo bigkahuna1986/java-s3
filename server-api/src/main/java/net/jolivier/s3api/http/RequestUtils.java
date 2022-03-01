@@ -2,8 +2,10 @@ package net.jolivier.s3api.http;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.glassfish.jersey.server.ContainerRequest;
@@ -25,7 +27,8 @@ import uk.co.lucasweb.aws.v4.signer.credentials.AwsCredentials;
 public enum RequestUtils {
 	;
 
-	public static final String BUCKET_REGEX = "(?=^.{3,63}$)(?!^(\\d+\\.)+\\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])$)";
+	public static final Pattern BUCKET_REGEX = Pattern.compile(
+			"(?=^.{3,63}$)(?!^(\\d+\\.)+\\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])$)");
 
 	@SuppressWarnings("unchecked")
 	public static <T> T readJaxbEntity(Class<T> cls, InputStream input) {
@@ -41,8 +44,8 @@ public enum RequestUtils {
 		}
 	}
 
-	public static final String calculateV4Sig(ContainerRequestContext request, String signedHeaders, String accessKey,
-			String secretKey, String region) {
+	public static final String calculateV4Sig(ContainerRequestContext request, URI requestUri, String signedHeaders,
+			String accessKey, String secretKey, String region) {
 
 		Builder signer = Signer.builder();
 
@@ -55,10 +58,8 @@ public enum RequestUtils {
 			signer.header(name.trim(), map.get(name));
 		}
 
-		final String signature = signer
-				.buildS3(new HttpRequest(request.getMethod(), request.getUriInfo().getRequestUri()),
-						request.getHeaderString("x-amz-content-sha256"))
-				.getSignature();
+		final String signature = signer.buildS3(new HttpRequest(request.getMethod(), requestUri),
+				request.getHeaderString("x-amz-content-sha256")).getSignature();
 
 		return signature;
 	}
