@@ -9,7 +9,6 @@ import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.ext.Provider;
 import net.jolivier.s3api.NoSuchBucketException;
-import net.jolivier.s3api.http.context.RequestBucket;
 
 @Provider
 @PreMatching
@@ -28,7 +27,7 @@ public class VirtualHostMatchingFilter implements ContainerRequestFilter {
 
 		final String bucket = host.substring(0, index);
 
-		ctx.setProperty("bucket", RequestBucket.of(bucket));
+		ctx.setProperty("bucket", bucket);
 
 	}
 

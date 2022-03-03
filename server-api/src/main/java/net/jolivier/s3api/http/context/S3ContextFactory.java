@@ -5,7 +5,7 @@ import org.glassfish.hk2.api.Factory;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
-public class RequestBucketFactory implements Factory<RequestBucket> {
+public class S3ContextFactory implements Factory<S3Context> {
 
 	private ContainerRequestContext context;
 
@@ -15,12 +15,12 @@ public class RequestBucketFactory implements Factory<RequestBucket> {
 	}
 
 	@Override
-	public RequestBucket provide() {
-		return (RequestBucket) context.getProperty("bucket");
+	public S3Context provide() {
+		return (S3Context) context.getProperty("s3ctx");
 	}
 
 	@Override
-	public void dispose(RequestBucket instance) {
+	public void dispose(S3Context instance) {
 	}
 
 }

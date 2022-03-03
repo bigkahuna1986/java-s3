@@ -26,6 +26,7 @@ public class S3Server {
 		config.register(NoSuchKeyExceptionMapper.class);
 		config.register(NoSuchBucketExceptionMapper.class);
 		config.register(RequestFailedExceptionMapper.class);
+		
 		config.register(PathMatchingFilter.class);
 		config.register(SignatureFilter.class);
 

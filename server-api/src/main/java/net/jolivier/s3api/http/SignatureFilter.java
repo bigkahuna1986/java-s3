@@ -19,7 +19,8 @@ import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.AwsSigV4;
-import net.jolivier.s3api.http.context.RequestBucket;
+import net.jolivier.s3api.http.context.S3Context;
+import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.User;
 
 /**
@@ -39,40 +40,57 @@ public class SignatureFilter implements ContainerRequestFilter {
 	private ResourceInfo resourceInfo;
 
 	@Override
-	public void filter(ContainerRequestContext requestContext) {
+	public void filter(ContainerRequestContext ctx) {
 		Method method = resourceInfo.getResourceMethod();
+		PublicAccessBlockConfiguration accessPolicy = PublicAccessBlockConfiguration.ALL_RESTRICTED;
+		final String bucket = (String) ctx.getProperty("bucket");
+
+		if (Strings.isNullOrEmpty(bucket) && !Strings.isNullOrEmpty(ctx.getUriInfo().getPath()))
+			throw new RequestFailedException("No bucket provided");
+
+		if (!Strings.isNullOrEmpty(bucket))
+			accessPolicy = ApiPoint.data().internalPublicAccessBlock(bucket).orElse(accessPolicy);
+
 		if (!method.isAnnotationPresent(BucketOptional.class)) {
-			final RequestBucket bucket = (RequestBucket) requestContext.getProperty("bucket");
-			if (!Strings.isNullOrEmpty(bucket.name()) && !RequestUtils.BUCKET_REGEX.matcher(bucket.name()).matches()) {
-				throw new RequestFailedException("Invalid bucket name format: " + bucket.name());
+			if (!Strings.isNullOrEmpty(bucket) && !RequestUtils.BUCKET_REGEX.matcher(bucket).matches()) {
+				throw new RequestFailedException("Invalid bucket name format: " + bucket);
 			}
 		}
-		UriInfo uriInfo = requestContext.getUriInfo();
+
+		UriInfo uriInfo = ctx.getUriInfo();
 
 		// Fetch authorization header
-		try {
-			final String receivedAuth = requestContext.getHeaderString("Authorization");
-			final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);
-			final User user = ApiPoint.auth().user(sigv4.accessKeyId());
+		if (accessPolicy.isRestrictPublicBuckets()) {
+			try {
+				final String receivedAuth = ctx.getHeaderString("Authorization");
+				final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);
+				final User user = ApiPoint.auth().user(sigv4.accessKeyId());
 
-			final URI requestUri = requestContext.getPropertyNames().contains(ORIG_URI)
-					? (URI) requestContext.getProperty(ORIG_URI)
-					: uriInfo.getRequestUri();
+				final URI requestUri = ctx.getPropertyNames().contains(ORIG_URI) ? (URI) ctx.getProperty(ORIG_URI)
+						: uriInfo.getRequestUri();
 
-			final String computedAuth = RequestUtils.calculateV4Sig(requestContext, requestUri, sigv4.signedHeaders(),
-					sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
+				final String computedAuth = RequestUtils.calculateV4Sig(ctx, requestUri, sigv4.signedHeaders(),
+						sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
 
-			if (!receivedAuth.equals(computedAuth)) {
-				_logger.error("exp " + computedAuth + " act " + receivedAuth);
-				throw new InvalidAuthException("Invalid AWSV4 signature!");
+				if (!receivedAuth.equals(computedAuth)) {
+					_logger.error("exp " + computedAuth + " act " + receivedAuth);
+					throw new InvalidAuthException("Invalid AWSV4 signature!");
+				}
+
+				ctx.setProperty("s3user", user);
+				ctx.setProperty("sigv4", sigv4);
+
+				if (!Strings.isNullOrEmpty(bucket))
+					ctx.setProperty("s3ctx", S3Context.bucketRestricted(bucket, user, ApiPoint.auth().findOwner(user)));
+				else
+					ctx.setProperty("s3ctx", S3Context.noBucket(user, ApiPoint.auth().findOwner(user)));
+
+			} catch (InvalidAuthException e) {
+				_logger.error("", e);
+				ctx.abortWith(Response.status(Response.Status.FORBIDDEN).build());
 			}
-
-			requestContext.setProperty("s3user", user);
-			requestContext.setProperty("sigv4", sigv4);
-
-		} catch (InvalidAuthException e) {
-			_logger.error("", e);
-			requestContext.abortWith(Response.status(Response.Status.FORBIDDEN).build());
+		} else {
+			ctx.setProperty("s3ctx", S3Context.bucketPublic(bucket, ApiPoint.auth().findOwner(bucket)));
 		}
 	}
 

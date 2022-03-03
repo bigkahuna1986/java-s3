@@ -14,7 +14,6 @@ import jakarta.ws.rs.core.PathSegment;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.Provider;
-import net.jolivier.s3api.http.context.RequestBucket;
 
 @Provider
 @PreMatching
@@ -39,7 +38,7 @@ public class PathMatchingFilter implements ContainerRequestFilter {
 		final UriBuilder builder = UriBuilder.fromUri(requestUri).replacePath(pathAfter);
 
 		final URI baseUri = uriInfo.getBaseUri();
-		ctx.setProperty("bucket", RequestBucket.of(bucket));
+		ctx.setProperty("bucket", bucket);
 		ctx.setProperty(SignatureFilter.ORIG_URI, requestUri);
 		ctx.setRequestUri(baseUri, builder.build());
 

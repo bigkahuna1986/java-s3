@@ -7,8 +7,8 @@ import jakarta.ws.rs.core.Feature;
 import jakarta.ws.rs.core.FeatureContext;
 import jakarta.ws.rs.ext.Provider;
 import net.jolivier.s3api.auth.AwsSigV4;
-import net.jolivier.s3api.http.context.RequestBucket;
-import net.jolivier.s3api.http.context.RequestBucketFactory;
+import net.jolivier.s3api.http.context.S3Context;
+import net.jolivier.s3api.http.context.S3ContextFactory;
 import net.jolivier.s3api.http.context.S3UserFactory;
 import net.jolivier.s3api.http.context.Sigv4Factory;
 import net.jolivier.s3api.model.User;
@@ -37,7 +37,7 @@ public class ProjectFeature implements Feature {
 		context.register(new AbstractBinder() {
 			@Override
 			protected void configure() {
-				bindFactory(RequestBucketFactory.class).to(RequestBucket.class).proxy(false).proxyForSameScope(true)
+				bindFactory(S3ContextFactory.class).to(S3Context.class).proxy(false).proxyForSameScope(true)
 						.in(PerLookup.class);
 
 			}

@@ -15,7 +15,7 @@ import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.RequestFailedException;
-import net.jolivier.s3api.http.context.RequestBucket;
+import net.jolivier.s3api.http.context.S3Context;
 import net.jolivier.s3api.model.CreateBucketConfiguration;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.User;
@@ -37,7 +37,7 @@ public class S3Buckets {
 	@Path("/")
 	@HEAD
 	@BucketOptional
-	public Response headBucket(@NotNull @Context User user, @Context RequestBucket bucket) {
+	public Response headBucket(@NotNull @Context User user, @Context S3Context bucket) {
 		final boolean result = ApiPoint.data().headBucket(user, bucket.name());
 		return result ? Response.ok().build() : Response.status(404).build();
 	}
@@ -52,7 +52,7 @@ public class S3Buckets {
 	@PUT
 	@Consumes(MediaType.APPLICATION_XML)
 	@BucketOptional
-	public Response createBucket(@NotNull @Context User user, @Context RequestBucket bucket,
+	public Response createBucket(@NotNull @Context User user, @Context S3Context bucket,
 			@Context ContainerRequest req, @Context UriInfo uriInfo) {
 
 		if (uriInfo.getQueryParameters().containsKey("versioning")) {
@@ -95,7 +95,7 @@ public class S3Buckets {
 	 */
 	@Path("/")
 	@DELETE
-	public Response deleteBucket(@NotNull @Context User user, @Context RequestBucket bucket, @Context UriInfo uriInfo) {
+	public Response deleteBucket(@NotNull @Context User user, @Context S3Context bucket, @Context UriInfo uriInfo) {
 
 		if (uriInfo.getQueryParameters().containsKey("publicAccessBlock")) {
 			if (!ApiPoint.data().deletePublicAccessBlock(user, bucket.name()))

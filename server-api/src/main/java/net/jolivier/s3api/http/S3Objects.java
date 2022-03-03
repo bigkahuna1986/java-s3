@@ -40,7 +40,7 @@ import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
-import net.jolivier.s3api.http.context.RequestBucket;
+import net.jolivier.s3api.http.context.S3Context;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
@@ -60,7 +60,7 @@ public class S3Objects {
 	 */
 	@Path("/{key: .+}")
 	@GET
-	public Response getObject(@NotNull @Context User user, @Context RequestBucket bucket,
+	public Response getObject(@NotNull @Context User user, @Context S3Context bucket,
 			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
 		final GetObjectResult result = ApiPoint.data().getObject(user, bucket.name(), key,
 				Optional.ofNullable(versionId));
@@ -75,7 +75,7 @@ public class S3Objects {
 	 */
 	@Path("/{key: .+}")
 	@HEAD
-	public Response headObject(@NotNull @Context User user, @Context RequestBucket bucket,
+	public Response headObject(@NotNull @Context User user, @Context S3Context bucket,
 			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
 		final HeadObjectResult result = ApiPoint.data().headObject(user, bucket.name(), key,
 				Optional.ofNullable(versionId));
@@ -90,7 +90,7 @@ public class S3Objects {
 	 */
 	@Path("/{key: .+}")
 	@DELETE
-	public Response deleteObject(@NotNull @Context User user, @Context RequestBucket bucket,
+	public Response deleteObject(@NotNull @Context User user, @Context S3Context bucket,
 			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
 		final boolean result = ApiPoint.data().deleteObject(user, bucket.name(), key, Optional.ofNullable(versionId));
 
@@ -103,7 +103,7 @@ public class S3Objects {
 	@Path("/")
 	@POST
 	@Produces(MediaType.APPLICATION_XML)
-	public DeleteResult deleteObjects(@NotNull @Context User user, @Context RequestBucket bucket,
+	public DeleteResult deleteObjects(@NotNull @Context User user, @Context S3Context bucket,
 			@Context ContainerRequest request) {
 
 		if (!request.getUriInfo().getQueryParameters().containsKey("delete"))
@@ -128,7 +128,7 @@ public class S3Objects {
 	 */
 	@Path("/{key: .+}")
 	@PUT
-	public Response putOrCopy(@NotNull @Context User user, @Context RequestBucket bucket,
+	public Response putOrCopy(@NotNull @Context User user, @Context S3Context bucket,
 			@NotNull @PathParam("key") String key, @HeaderParam("Content-MD5") String inputMd5,
 			@HeaderParam("Content-Type") String contentType, @HeaderParam(X_AMZ_COPY_SOURCE) String sourceKey,
 			@Context ContainerRequest request) {
@@ -176,7 +176,7 @@ public class S3Objects {
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
 	@BucketOptional
-	public Response listObjectsOrListBuckets(@NotNull @Context User user, @Context RequestBucket bucket,
+	public Response listObjectsOrListBuckets(@NotNull @Context User user, @Context S3Context bucket,
 			@QueryParam("delimiter") String delimiter, @QueryParam("encoding-type") String encodingType,
 			@QueryParam("marker") String marker, @QueryParam("VersionIdMarker") String versionIdMarker,
 			@DefaultValue("1000") @Max(1000) @Min(1) @QueryParam("max-keys") int maxKeys,

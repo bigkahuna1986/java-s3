@@ -6,6 +6,11 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "PublicAccessBlockConfiguration")
 public class PublicAccessBlockConfiguration {
 
+	public static final PublicAccessBlockConfiguration ALL_ALLOWED = new PublicAccessBlockConfiguration(false, false,
+			false, false);
+	public static final PublicAccessBlockConfiguration ALL_RESTRICTED = new PublicAccessBlockConfiguration(true, true,
+			true, true);
+
 	private boolean _blockPublicAcls;
 	private boolean _ignorePublicAcls;
 	private boolean _blockPublicPolicy;
