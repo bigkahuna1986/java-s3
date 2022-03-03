@@ -49,8 +49,6 @@ public class SignatureFilter implements ContainerRequestFilter {
 		}
 		UriInfo uriInfo = requestContext.getUriInfo();
 
-		_logger.info("uri {} method {}", uriInfo.getRequestUri(), method.getName());
-
 		// Fetch authorization header
 		try {
 			final String receivedAuth = requestContext.getHeaderString("Authorization");

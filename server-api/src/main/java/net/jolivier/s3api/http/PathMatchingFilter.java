@@ -34,17 +34,14 @@ public class PathMatchingFilter implements ContainerRequestFilter {
 
 		final List<PathSegment> segments = uriInfo.getPathSegments();
 
-		_logger.info("segments {}", segments);
-
 		final String bucket = segments.isEmpty() ? "" : segments.get(0).getPath();
 
 		final URI requestUri = uriInfo.getRequestUri();
-		final UriBuilder builder = UriBuilder.fromUri(requestUri)
-				.replacePath(
-						segments.size() > 1
-								? String.join("/", segments.subList(1, segments.size() - 1).stream()
-										.map(PathSegment::getPath).collect(Collectors.toList()))
-								: "/");
+		final String pathAfter = segments.size() > 1 ? String.join("/",
+				segments.subList(1, segments.size()).stream().map(PathSegment::getPath).collect(Collectors.toList()))
+				: "/";
+
+		final UriBuilder builder = UriBuilder.fromUri(requestUri).replacePath(pathAfter);
 
 		final URI baseUri = uriInfo.getBaseUri();
 		ctx.setProperty("bucket", RequestBucket.of(bucket));

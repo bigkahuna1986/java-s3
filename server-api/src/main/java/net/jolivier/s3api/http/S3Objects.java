@@ -187,7 +187,6 @@ public class S3Objects {
 			@QueryParam("prefix") String prefix, @Context UriInfo uriInfo) {
 
 		// List Buckets
-		_logger.info("list {}", bucket.name());
 		if (Strings.isNullOrEmpty(bucket.name())) {
 			final ListAllMyBucketsResult result = ApiPoint.data().listBuckets(user);
 
