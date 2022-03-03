@@ -12,8 +12,6 @@ import java.util.Date;
 import java.util.Optional;
 
 import org.glassfish.jersey.server.ContainerRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 
@@ -54,8 +52,6 @@ import net.jolivier.s3api.model.User;
 
 @Path("/")
 public class S3Objects {
-
-	private static final Logger _logger = LoggerFactory.getLogger(S3Objects.class);
 
 	/**
 	 * Get an existing object.

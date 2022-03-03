@@ -5,9 +5,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
@@ -22,8 +19,6 @@ import net.jolivier.s3api.http.context.RequestBucket;
 @Provider
 @PreMatching
 public class PathMatchingFilter implements ContainerRequestFilter {
-
-	private static final Logger _logger = LoggerFactory.getLogger(PathMatchingFilter.class);
 
 	@Context
 	private ResourceInfo resourceInfo;
