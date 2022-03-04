@@ -86,7 +86,7 @@ public class SignatureFilter implements ContainerRequestFilter {
 					ctx.setProperty("s3ctx", S3Context.noBucket(user, ApiPoint.auth().findOwner(user)));
 
 			} catch (InvalidAuthException e) {
-				_logger.error("", e);
+				_logger.error(e.getLocalizedMessage());
 				ctx.abortWith(Response.status(Response.Status.FORBIDDEN).build());
 			}
 		} else {
