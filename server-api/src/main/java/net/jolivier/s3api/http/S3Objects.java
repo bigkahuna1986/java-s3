@@ -13,8 +13,6 @@ import java.util.Optional;
 
 import org.glassfish.jersey.server.ContainerRequest;
 
-import com.google.common.base.Strings;
-
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -37,18 +35,19 @@ import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.AwsHeaders;
 import net.jolivier.s3api.BucketOptional;
+import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
-import net.jolivier.s3api.http.context.S3Context;
+import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
+import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.PutObjectResult;
-import net.jolivier.s3api.model.User;
 
 @Path("/")
 public class S3Objects {
@@ -60,9 +59,9 @@ public class S3Objects {
 	 */
 	@Path("/{key: .+}")
 	@GET
-	public Response getObject(@NotNull @Context User user, @Context S3Context bucket,
-			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
-		final GetObjectResult result = ApiPoint.data().getObject(user, bucket.name(), key,
+	public Response getObject(@Context S3Context ctx, @NotNull @PathParam("key") String key,
+			@QueryParam("versionId") String versionId) {
+		final GetObjectResult result = ApiPoint.data().getObject(ctx, ctx.bucket(), key,
 				Optional.ofNullable(versionId));
 		return RequestUtils.writeMetadataHeaders(Response.ok(result.getData()), result.getMetadata())
 				.type(result.getContentType()).tag(result.getEtag())
@@ -75,9 +74,9 @@ public class S3Objects {
 	 */
 	@Path("/{key: .+}")
 	@HEAD
-	public Response headObject(@NotNull @Context User user, @Context S3Context bucket,
-			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
-		final HeadObjectResult result = ApiPoint.data().headObject(user, bucket.name(), key,
+	public Response headObject(@Context S3Context ctx, @NotNull @PathParam("key") String key,
+			@QueryParam("versionId") String versionId) {
+		final HeadObjectResult result = ApiPoint.data().headObject(ctx, ctx.bucket(), key,
 				Optional.ofNullable(versionId));
 		return RequestUtils.writeMetadataHeaders(Response.ok(), result.getMetadata()).type(result.contentType())
 				.tag(result.etag()).lastModified(Date.from(result.modified().toInstant())).build();
@@ -90,9 +89,9 @@ public class S3Objects {
 	 */
 	@Path("/{key: .+}")
 	@DELETE
-	public Response deleteObject(@NotNull @Context User user, @Context S3Context bucket,
-			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
-		final boolean result = ApiPoint.data().deleteObject(user, bucket.name(), key, Optional.ofNullable(versionId));
+	public Response deleteObject(@Context S3Context ctx, @NotNull @PathParam("key") String key,
+			@QueryParam("versionId") String versionId) {
+		final boolean result = ApiPoint.data().deleteObject(ctx, ctx.bucket(), key, Optional.ofNullable(versionId));
 
 		return Response.status(result ? 204 : 404).build();
 	}
@@ -103,8 +102,7 @@ public class S3Objects {
 	@Path("/")
 	@POST
 	@Produces(MediaType.APPLICATION_XML)
-	public DeleteResult deleteObjects(@NotNull @Context User user, @Context S3Context bucket,
-			@Context ContainerRequest request) {
+	public DeleteResult deleteObjects(@Context S3Context ctx, @Context ContainerRequest request) {
 
 		if (!request.getUriInfo().getQueryParameters().containsKey("delete"))
 			throw new RequestFailedException("delete required");
@@ -112,7 +110,7 @@ public class S3Objects {
 		final DeleteObjectsRequest req = RequestUtils.readJaxbEntity(DeleteObjectsRequest.class,
 				request.getEntityStream());
 
-		final DeleteResult result = ApiPoint.data().deleteObjects(user, bucket.name(), req);
+		final DeleteResult result = ApiPoint.data().deleteObjects(ctx, ctx.bucket(), req);
 
 		return result;
 
@@ -128,10 +126,9 @@ public class S3Objects {
 	 */
 	@Path("/{key: .+}")
 	@PUT
-	public Response putOrCopy(@NotNull @Context User user, @Context S3Context bucket,
-			@NotNull @PathParam("key") String key, @HeaderParam("Content-MD5") String inputMd5,
-			@HeaderParam("Content-Type") String contentType, @HeaderParam(X_AMZ_COPY_SOURCE) String sourceKey,
-			@Context ContainerRequest request) {
+	public Response putOrCopy(@Context S3Context ctx, @NotNull @PathParam("key") String key,
+			@HeaderParam("Content-MD5") String inputMd5, @HeaderParam("Content-Type") String contentType,
+			@HeaderParam(X_AMZ_COPY_SOURCE) String sourceKey, @Context ContainerRequest request) {
 
 		// copyObject
 		if (sourceKey != null) {
@@ -141,9 +138,14 @@ public class S3Objects {
 			// sourceKey is in the form "/bucket/prefix/key"
 			// so we strip the first / and the bucket name off.
 			final String srcBucket = sourceKey.substring(0, idx);
+
+			final Owner srcOwner = ApiPoint.auth().findOwner(srcBucket);
+			if (!srcOwner.getId().equals(ctx.owner().getId()))
+				throw new InvalidAuthException("Wrong owner");
+
 			final String srcKey = sourceKey.substring(idx + 1);
 			final boolean copyMetadata = "replace".equals(request.getHeaderString(AwsHeaders.X_AMZ_METADATA_DIRECTIVE));
-			final CopyObjectResult result = ApiPoint.data().copyObject(user, srcBucket, srcKey, bucket.name(), key,
+			final CopyObjectResult result = ApiPoint.data().copyObject(ctx, srcBucket, srcKey, ctx.bucket(), key,
 					copyMetadata, copyMetadata ? Collections.emptyMap() : RequestUtils.metadataHeaders(request));
 
 			return Response.ok(result).build();
@@ -153,7 +155,7 @@ public class S3Objects {
 		else {
 			try (InputStream in = new ChunkedInputStream(request.getEntityStream())) {
 
-				final PutObjectResult result = ApiPoint.data().putObject(user, bucket.name(), key,
+				final PutObjectResult result = ApiPoint.data().putObject(ctx, ctx.bucket(), key,
 						Optional.ofNullable(inputMd5), Optional.ofNullable(contentType), metadataHeaders(request), in);
 
 				// Send new object version back to client.
@@ -176,15 +178,15 @@ public class S3Objects {
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
 	@BucketOptional
-	public Response listObjectsOrListBuckets(@NotNull @Context User user, @Context S3Context bucket,
-			@QueryParam("delimiter") String delimiter, @QueryParam("encoding-type") String encodingType,
-			@QueryParam("marker") String marker, @QueryParam("VersionIdMarker") String versionIdMarker,
+	public Response listObjectsOrListBuckets(@Context S3Context ctx, @QueryParam("delimiter") String delimiter,
+			@QueryParam("encoding-type") String encodingType, @QueryParam("marker") String marker,
+			@QueryParam("VersionIdMarker") String versionIdMarker,
 			@DefaultValue("1000") @Max(1000) @Min(1) @QueryParam("max-keys") int maxKeys,
 			@QueryParam("prefix") String prefix, @Context UriInfo uriInfo) {
 
 		// List Buckets
-		if (Strings.isNullOrEmpty(bucket.name())) {
-			final ListAllMyBucketsResult result = ApiPoint.data().listBuckets(user);
+		if (ctx.optBucket().isEmpty()) {
+			final ListAllMyBucketsResult result = ApiPoint.data().listBuckets(ctx);
 
 			return Response.ok(result).build();
 		}
@@ -193,18 +195,18 @@ public class S3Objects {
 
 		if (!query.isEmpty()) {
 			if (query.containsKey("versioning"))
-				return Response.ok(ApiPoint.data().getBucketVersioning(user, bucket.name())).build();
+				return Response.ok(ApiPoint.data().getBucketVersioning(ctx, ctx.bucket())).build();
 
 			if (query.containsKey("publicAccessBlock"))
-				return Response.ok(ApiPoint.data().getPublicAccessBlock(user, bucket.name())).build();
+				return Response.ok(ApiPoint.data().getPublicAccessBlock(ctx, ctx.bucket())).build();
 
 			if (query.containsKey("versions"))
-				return Response.ok(ApiPoint.data().listObjectVersions(user, bucket.name(), ofNullable(delimiter),
+				return Response.ok(ApiPoint.data().listObjectVersions(ctx, ctx.bucket(), ofNullable(delimiter),
 						ofNullable(encodingType), ofNullable(marker), ofNullable(versionIdMarker), maxKeys,
 						ofNullable(prefix))).build();
 		}
 
-		return Response.ok(ApiPoint.data().listObjects(user, bucket.name(), Optional.ofNullable(delimiter),
+		return Response.ok(ApiPoint.data().listObjects(ctx, ctx.bucket(), Optional.ofNullable(delimiter),
 				Optional.ofNullable(encodingType), Optional.ofNullable(marker), maxKeys, Optional.ofNullable(prefix)))
 				.build();
 	}

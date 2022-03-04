@@ -19,7 +19,7 @@ import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.AwsSigV4;
-import net.jolivier.s3api.http.context.S3Context;
+import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.User;
 

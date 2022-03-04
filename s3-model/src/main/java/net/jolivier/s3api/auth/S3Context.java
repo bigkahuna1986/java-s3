@@ -1,14 +1,15 @@
-package net.jolivier.s3api.http.context;
+package net.jolivier.s3api.auth;
 
 import java.util.Objects;
 import java.util.Optional;
 
+import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.User;
 
 public class S3Context {
 
-	private final Optional<String> _name;
+	private final Optional<String> _bucket;
 	private final Optional<User> _user;
 	private final Owner _owner;
 
@@ -25,13 +26,17 @@ public class S3Context {
 	}
 
 	private S3Context(Optional<String> name, Optional<User> user, Owner owner) {
-		_name = name;
+		_bucket = name;
 		_user = user;
 		_owner = owner;
 	}
 
-	public Optional<String> name() {
-		return _name;
+	public Optional<String> optBucket() {
+		return _bucket;
+	}
+
+	public String bucket() {
+		return _bucket.orElseThrow(() -> new RequestFailedException("no bucket"));
 	}
 
 	public Owner owner() {

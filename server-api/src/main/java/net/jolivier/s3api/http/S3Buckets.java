@@ -2,7 +2,6 @@ package net.jolivier.s3api.http;
 
 import org.glassfish.jersey.server.ContainerRequest;
 
-import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.HEAD;
@@ -15,10 +14,9 @@ import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.RequestFailedException;
-import net.jolivier.s3api.http.context.S3Context;
+import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.CreateBucketConfiguration;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
-import net.jolivier.s3api.model.User;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
 /**
@@ -37,8 +35,8 @@ public class S3Buckets {
 	@Path("/")
 	@HEAD
 	@BucketOptional
-	public Response headBucket(@NotNull @Context User user, @Context S3Context bucket) {
-		final boolean result = ApiPoint.data().headBucket(user, bucket.name());
+	public Response headBucket(@Context S3Context ctx) {
+		final boolean result = ApiPoint.data().headBucket(ctx, ctx.bucket());
 		return result ? Response.ok().build() : Response.status(404).build();
 	}
 
@@ -52,14 +50,13 @@ public class S3Buckets {
 	@PUT
 	@Consumes(MediaType.APPLICATION_XML)
 	@BucketOptional
-	public Response createBucket(@NotNull @Context User user, @Context S3Context bucket,
-			@Context ContainerRequest req, @Context UriInfo uriInfo) {
+	public Response createBucket(@Context S3Context ctx, @Context ContainerRequest req, @Context UriInfo uriInfo) {
 
 		if (uriInfo.getQueryParameters().containsKey("versioning")) {
 			VersioningConfiguration config = RequestUtils.readJaxbEntity(VersioningConfiguration.class,
 					req.getEntityStream());
 
-			if (!ApiPoint.data().putBucketVersioning(user, bucket.name(), config))
+			if (!ApiPoint.data().putBucketVersioning(ctx, ctx.bucket(), config))
 				throw new RequestFailedException();
 
 			return Response.ok().build();
@@ -69,7 +66,7 @@ public class S3Buckets {
 			PublicAccessBlockConfiguration config = RequestUtils.readJaxbEntity(PublicAccessBlockConfiguration.class,
 					req.getEntityStream());
 
-			if (!ApiPoint.data().putPublicAccessBlock(user, bucket.name(), config))
+			if (!ApiPoint.data().putPublicAccessBlock(ctx, ctx.bucket(), config))
 				throw new RequestFailedException();
 
 			return Response.ok().build();
@@ -81,7 +78,7 @@ public class S3Buckets {
 					req.getEntityStream());
 			location = config.getLocation();
 		}
-		if (!ApiPoint.data().createBucket(user, bucket.name(), location))
+		if (!ApiPoint.data().createBucket(ctx, ctx.bucket(), location))
 			throw new RequestFailedException();
 
 		return Response.ok().build();
@@ -95,21 +92,19 @@ public class S3Buckets {
 	 */
 	@Path("/")
 	@DELETE
-	public Response deleteBucket(@NotNull @Context User user, @Context S3Context bucket, @Context UriInfo uriInfo) {
+	public Response deleteBucket(@Context S3Context ctx, @Context UriInfo uriInfo) {
 
 		if (uriInfo.getQueryParameters().containsKey("publicAccessBlock")) {
-			if (!ApiPoint.data().deletePublicAccessBlock(user, bucket.name()))
+			if (!ApiPoint.data().deletePublicAccessBlock(ctx, ctx.bucket()))
 				throw new RequestFailedException();
 
 			return Response.noContent().build();
 		}
 
-		if (!ApiPoint.data().deleteBucket(user, bucket.name()))
+		if (!ApiPoint.data().deleteBucket(ctx, ctx.bucket()))
 			throw new RequestFailedException();
 
 		return Response.noContent().build();
 	}
-
-
 
 }

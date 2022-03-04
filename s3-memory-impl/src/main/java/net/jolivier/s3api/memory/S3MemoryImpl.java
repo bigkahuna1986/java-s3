@@ -27,6 +27,7 @@ import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.S3AuthStore;
 import net.jolivier.s3api.S3DataStore;
+import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.Bucket;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteError;
@@ -138,29 +139,14 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	private static final Map<String, Map<String, StoredObject>> MAP = new ConcurrentHashMap<>();
 	private static final Map<String, OwnedBucket> BUCKETS = new ConcurrentHashMap<String, OwnedBucket>();
 
-	private static final Owner assertOwner(User user, String bucket) {
-		OwnedBucket ob = BUCKETS.get(bucket);
-		if (ob == null)
-			throw new NoSuchBucketException(bucket);
-		String ownerId = USER_OWNER_MAPPING.get(user.accessKeyId());
-		if (ownerId == null)
-			throw new InvalidAuthException();
-		if (!ob.owner.getId().equals(ownerId))
-			throw new InvalidAuthException();
-
-		return ob.owner;
-	}
-
 	@Override
-	public VersioningConfiguration getBucketVersioning(User user, String bucket) {
-		assertOwner(user, bucket);
+	public VersioningConfiguration getBucketVersioning(S3Context ctx, String bucket) {
 		// Versioning not supported here.
 		return VersioningConfiguration.disabled();
 	}
 
 	@Override
-	public boolean putBucketVersioning(User user, String bucket, VersioningConfiguration config) {
-		assertOwner(user, bucket);
+	public boolean putBucketVersioning(S3Context ctx, String bucket, VersioningConfiguration config) {
 		// Versioning not supported here.
 		return false;
 	}
@@ -221,36 +207,31 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public boolean headBucket(User user, String bucket) {
-		assertOwner(user, bucket);
+	public boolean headBucket(S3Context ctx, String bucket) {
 		return MAP.containsKey(bucket);
 	}
 
 	@Override
-	public boolean createBucket(User user, String bucket, String location) {
+	public boolean createBucket(S3Context ctx, String bucket, String location) {
 		Map<String, StoredObject> prev = MAP.putIfAbsent(bucket, new ConcurrentHashMap<>());
 		if (prev == null) {
-			Owner owner = findOwner(user);
-			BUCKETS.put(bucket, new OwnedBucket(new Bucket(bucket, ZonedDateTime.now()), owner));
+			BUCKETS.put(bucket, new OwnedBucket(new Bucket(bucket, ZonedDateTime.now()), ctx.owner()));
 		}
 		return prev == null;
 	}
 
 	@Override
-	public boolean deleteBucket(User user, String bucket) {
-		assertOwner(user, bucket);
+	public boolean deleteBucket(S3Context ctx, String bucket) {
 		MAP.remove(bucket);
 		BUCKETS.remove(bucket);
 		return true;
 	}
 
 	@Override
-	public ListAllMyBucketsResult listBuckets(User user) {
-		Owner owner = findOwner(user);
-
-		List<Bucket> buckets = BUCKETS.values().stream().filter(ob -> ob.owner.getId().equals(owner.getId()))
+	public ListAllMyBucketsResult listBuckets(S3Context ctx) {
+		List<Bucket> buckets = BUCKETS.values().stream().filter(ob -> ob.owner.getId().equals(ctx.owner().getId()))
 				.map(OwnedBucket::bucket).collect(Collectors.toList());
-		return new ListAllMyBucketsResult(buckets, owner);
+		return new ListAllMyBucketsResult(buckets, ctx.owner());
 	}
 
 	// Public access blocks not supported on this implementation
@@ -260,27 +241,22 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public PublicAccessBlockConfiguration getPublicAccessBlock(User user, String bucket) {
-		assertOwner(user, bucket);
+	public PublicAccessBlockConfiguration getPublicAccessBlock(S3Context ctx, String bucket) {
 		return new PublicAccessBlockConfiguration(true, true, true, true);
 	}
 
 	@Override
-	public boolean putPublicAccessBlock(User user, String bucket, PublicAccessBlockConfiguration config) {
-		assertOwner(user, bucket);
+	public boolean putPublicAccessBlock(S3Context ctx, String bucket, PublicAccessBlockConfiguration config) {
 		return false;
 	}
 
 	@Override
-	public boolean deletePublicAccessBlock(User user, String bucket) {
-		assertOwner(user, bucket);
+	public boolean deletePublicAccessBlock(S3Context ctx, String bucket) {
 		return false;
 	}
 
 	@Override
-	public GetObjectResult getObject(User user, String bucket, String key, Optional<String> versionId) {
-		assertOwner(user, bucket);
-
+	public GetObjectResult getObject(S3Context ctx, String bucket, String key, Optional<String> versionId) {
 		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
 			StoredObject stored = objects.get(key);
@@ -293,9 +269,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public HeadObjectResult headObject(User user, String bucket, String key, Optional<String> versionId) {
-		assertOwner(user, bucket);
-
+	public HeadObjectResult headObject(S3Context ctx, String bucket, String key, Optional<String> versionId) {
 		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
 			StoredObject stored = objects.get(key);
@@ -308,9 +282,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public boolean deleteObject(User user, String bucket, String key, Optional<String> versionId) {
-		assertOwner(user, bucket);
-
+	public boolean deleteObject(S3Context ctx, String bucket, String key, Optional<String> versionId) {
 		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
 			StoredObject prev = objects.remove(key);
@@ -321,9 +293,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public DeleteResult deleteObjects(User user, String bucket, DeleteObjectsRequest request) {
-		assertOwner(user, bucket);
-
+	public DeleteResult deleteObjects(S3Context ctx, String bucket, DeleteObjectsRequest request) {
 		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
 			List<Deleted> deleted = new LinkedList<>();
@@ -344,10 +314,8 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public PutObjectResult putObject(User user, String bucket, String key, Optional<String> inputMd5,
+	public PutObjectResult putObject(S3Context ctx, String bucket, String key, Optional<String> inputMd5,
 			Optional<String> contentType, Map<String, String> metadata, InputStream data) {
-		assertOwner(user, bucket);
-
 		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects != null) {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -370,11 +338,8 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public CopyObjectResult copyObject(User user, String srcBucket, String srcKey, String dstBucket, String dstKey,
+	public CopyObjectResult copyObject(S3Context ctx, String srcBucket, String srcKey, String dstBucket, String dstKey,
 			boolean copyMetadata, Map<String, String> newMetadata) {
-		assertOwner(user, srcBucket);
-		assertOwner(user, dstBucket);
-
 		if (!BUCKETS.containsKey(srcBucket))
 			throw new NoSuchBucketException(srcBucket);
 
@@ -390,10 +355,8 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public ListBucketResult listObjects(User user, String bucket, Optional<String> delimiter,
+	public ListBucketResult listObjects(S3Context ctx, String bucket, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, int maxKeys, Optional<String> prefix) {
-		Owner owner = assertOwner(user, bucket);
-
 		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects == null)
 			throw new NoSuchBucketException(bucket);
@@ -422,7 +385,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		for (int i = startIndex; i < endIndex; ++i) {
 			String key = keys.get(i);
 			StoredObject metadata = objects.get(key);
-			list.add(new ListObject(metadata.etag(), key, metadata.modified(), owner, metadata.data().length));
+			list.add(new ListObject(metadata.etag(), key, metadata.modified(), ctx.owner(), metadata.data().length));
 		}
 
 		ListBucketResult result = new ListBucketResult(truncated, marker.orElse(null), nextMarker, bucket,
@@ -433,11 +396,9 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public ListVersionsResult listObjectVersions(User user, String bucket, Optional<String> delimiter,
+	public ListVersionsResult listObjectVersions(S3Context ctx, String bucket, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, Optional<String> versionIdMarker, int maxKeys,
 			Optional<String> prefix) {
-		Owner owner = assertOwner(user, bucket);
-
 		Map<String, StoredObject> objects = MAP.get(bucket);
 		if (objects == null)
 			throw new NoSuchBucketException(bucket);
@@ -465,7 +426,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		for (int i = startIndex; i < endIndex; ++i) {
 			String key = keys.get(i);
 			StoredObject metadata = objects.get(key);
-			list.add(new ObjectVersion(owner, key, bucket, true, metadata.modified(), metadata.etag(),
+			list.add(new ObjectVersion(ctx.owner(), key, bucket, true, metadata.modified(), metadata.etag(),
 					(long) metadata.data().length, "STANDARD"));
 		}
 

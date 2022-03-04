@@ -4,6 +4,7 @@ import org.glassfish.hk2.api.Factory;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
+import net.jolivier.s3api.auth.S3Context;
 
 public class S3ContextFactory implements Factory<S3Context> {
 

@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Optional;
 
+import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
@@ -14,7 +15,6 @@ import net.jolivier.s3api.model.ListBucketResult;
 import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.PutObjectResult;
-import net.jolivier.s3api.model.User;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
 /**
@@ -34,45 +34,45 @@ import net.jolivier.s3api.model.VersioningConfiguration;
 public interface S3DataStore {
 
 	// buckets
-	public boolean headBucket(User user, String bucket);
+	public boolean headBucket(S3Context ctx, String bucket);
 
-	public boolean createBucket(User user, String bucket, String location);
+	public boolean createBucket(S3Context ctx, String bucket, String location);
 
-	public boolean deleteBucket(User user, String bucket);
+	public boolean deleteBucket(S3Context ctx, String bucket);
 
-	public ListAllMyBucketsResult listBuckets(User user);
+	public ListAllMyBucketsResult listBuckets(S3Context ctx);
 
-	public VersioningConfiguration getBucketVersioning(User user, String bucket);
+	public VersioningConfiguration getBucketVersioning(S3Context ctx, String bucket);
 
-	public boolean putBucketVersioning(User user, String bucket, VersioningConfiguration config);
+	public boolean putBucketVersioning(S3Context ctx, String bucket, VersioningConfiguration config);
 
 	public Optional<PublicAccessBlockConfiguration> internalPublicAccessBlock(String bucket);
 
-	public PublicAccessBlockConfiguration getPublicAccessBlock(User user, String bucket);
+	public PublicAccessBlockConfiguration getPublicAccessBlock(S3Context ctx, String bucket);
 
-	public boolean putPublicAccessBlock(User user, String bucket, PublicAccessBlockConfiguration config);
+	public boolean putPublicAccessBlock(S3Context ctx, String bucket, PublicAccessBlockConfiguration config);
 
-	public boolean deletePublicAccessBlock(User user, String bucket);
+	public boolean deletePublicAccessBlock(S3Context ctx, String bucket);
 
 	// objects
-	public GetObjectResult getObject(User user, String bucket, String key, Optional<String> versionId);
+	public GetObjectResult getObject(S3Context ctx, String bucket, String key, Optional<String> versionId);
 
-	public HeadObjectResult headObject(User user, String bucket, String key, Optional<String> versionId);
+	public HeadObjectResult headObject(S3Context ctx, String bucket, String key, Optional<String> versionId);
 
-	public boolean deleteObject(User user, String bucket, String key, Optional<String> versionId);
+	public boolean deleteObject(S3Context ctx, String bucket, String key, Optional<String> versionId);
 
-	public DeleteResult deleteObjects(User user, String bucket, DeleteObjectsRequest request);
+	public DeleteResult deleteObjects(S3Context ctx, String bucket, DeleteObjectsRequest request);
 
-	public PutObjectResult putObject(User user, String bucket, String key, Optional<String> inputMd5,
+	public PutObjectResult putObject(S3Context ctx, String bucket, String key, Optional<String> inputMd5,
 			Optional<String> contentType, Map<String, String> metadata, InputStream data);
 
-	public CopyObjectResult copyObject(User user, String srcBucket, String srcKey, String dstBucket, String dstKey,
+	public CopyObjectResult copyObject(S3Context ctx, String srcBucket, String srcKey, String dstBucket, String dstKey,
 			boolean copyMetadata, Map<String, String> newMetadata);
 
-	public ListBucketResult listObjects(User user, String bucket, Optional<String> delimiter,
+	public ListBucketResult listObjects(S3Context ctx, String bucket, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, int maxKeys, Optional<String> prefix);
 
-	public ListVersionsResult listObjectVersions(User user, String bucket, Optional<String> delimiter,
+	public ListVersionsResult listObjectVersions(S3Context ctx, String bucket, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, Optional<String> versionIdMarker, int maxKeys,
 			Optional<String> prefix);
 

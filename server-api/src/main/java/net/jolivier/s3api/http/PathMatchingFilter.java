@@ -28,7 +28,7 @@ public class PathMatchingFilter implements ContainerRequestFilter {
 
 		final List<PathSegment> segments = uriInfo.getPathSegments();
 
-		final String bucket = segments.isEmpty() ? "" : segments.get(0).getPath();
+		final String bucket = segments.isEmpty() ? null : segments.get(0).getPath();
 
 		final URI requestUri = uriInfo.getRequestUri();
 		final String pathAfter = segments.size() > 1 ? String.join("/",

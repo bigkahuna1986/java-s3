@@ -7,7 +7,7 @@ import jakarta.ws.rs.core.Feature;
 import jakarta.ws.rs.core.FeatureContext;
 import jakarta.ws.rs.ext.Provider;
 import net.jolivier.s3api.auth.AwsSigV4;
-import net.jolivier.s3api.http.context.S3Context;
+import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.http.context.S3ContextFactory;
 import net.jolivier.s3api.http.context.S3UserFactory;
 import net.jolivier.s3api.http.context.Sigv4Factory;
