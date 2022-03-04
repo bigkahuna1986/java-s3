@@ -49,4 +49,20 @@ public class VersioningConfiguration {
 	public void setMfaDelete(String mfaDelete) {
 		_mfaDelete = mfaDelete;
 	}
+
+	public boolean isEnabled() {
+		return _status.equals(ENABLED);
+	}
+
+	public boolean isDisabled() {
+		return _status.equals(DISABLED);
+	}
+
+	public boolean isSuspended() {
+		return _status.equals(SUSPENDED);
+	}
+
+	public VersioningConfiguration copy() {
+		return new VersioningConfiguration(_status);
+	}
 }

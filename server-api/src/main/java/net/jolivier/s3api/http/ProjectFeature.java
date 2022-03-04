@@ -9,9 +9,7 @@ import jakarta.ws.rs.ext.Provider;
 import net.jolivier.s3api.auth.AwsSigV4;
 import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.http.context.S3ContextFactory;
-import net.jolivier.s3api.http.context.S3UserFactory;
 import net.jolivier.s3api.http.context.Sigv4Factory;
-import net.jolivier.s3api.model.User;
 
 /**
  * Registers Jersey context factories for {@link net.jolivier.s3api.model.User}
@@ -24,15 +22,6 @@ public class ProjectFeature implements Feature {
 
 	@Override
 	public boolean configure(FeatureContext context) {
-
-		context.register(new AbstractBinder() {
-			@Override
-			protected void configure() {
-				bindFactory(S3UserFactory.class).to(User.class).proxy(false).proxyForSameScope(true)
-						.in(PerLookup.class);
-
-			}
-		});
 
 		context.register(new AbstractBinder() {
 			@Override

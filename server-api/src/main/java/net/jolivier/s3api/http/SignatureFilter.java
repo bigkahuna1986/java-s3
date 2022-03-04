@@ -15,7 +15,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.Provider;
-import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.AwsSigV4;
@@ -48,13 +47,11 @@ public class SignatureFilter implements ContainerRequestFilter {
 		if (Strings.isNullOrEmpty(bucket) && !Strings.isNullOrEmpty(ctx.getUriInfo().getPath()))
 			throw new RequestFailedException("No bucket provided");
 
-		if (!Strings.isNullOrEmpty(bucket))
-			accessPolicy = ApiPoint.data().internalPublicAccessBlock(bucket).orElse(accessPolicy);
-
-		if (!method.isAnnotationPresent(BucketOptional.class)) {
-			if (!Strings.isNullOrEmpty(bucket) && !RequestUtils.BUCKET_REGEX.matcher(bucket).matches()) {
+		if (!Strings.isNullOrEmpty(bucket)) {
+			if (!RequestUtils.BUCKET_REGEX.matcher(bucket).matches())
 				throw new RequestFailedException("Invalid bucket name format: " + bucket);
-			}
+
+			accessPolicy = ApiPoint.data().internalPublicAccessBlock(bucket).orElse(accessPolicy);
 		}
 
 		UriInfo uriInfo = ctx.getUriInfo();
@@ -77,7 +74,6 @@ public class SignatureFilter implements ContainerRequestFilter {
 					throw new InvalidAuthException("Invalid AWSV4 signature!");
 				}
 
-				ctx.setProperty("s3user", user);
 				ctx.setProperty("sigv4", sigv4);
 
 				if (!Strings.isNullOrEmpty(bucket))
