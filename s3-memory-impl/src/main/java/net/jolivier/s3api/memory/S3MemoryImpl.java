@@ -1,6 +1,7 @@
 package net.jolivier.s3api.memory;
 
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,15 @@ import net.jolivier.s3api.model.VersioningConfiguration;
 public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	INSTANCE;
 
-	private static final SecureRandom RANDOM = new SecureRandom();
+	public static final SecureRandom RANDOM = new SecureRandom();
+
+	public static final String versionGen() {
+		final byte[] bytes = new byte[20];
+		RANDOM.nextBytes(bytes);
+
+		return new BigInteger(bytes).toString(32);
+	}
+
 	private static final Map<String, User> USERS = new ConcurrentHashMap<>();
 	private static final Map<String, Owner> OWNERS = new ConcurrentHashMap<>();
 	private static final Map<String, String> USER_OWNER_MAPPING = new ConcurrentHashMap<>();

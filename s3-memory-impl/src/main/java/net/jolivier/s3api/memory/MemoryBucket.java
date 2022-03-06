@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 
@@ -43,14 +44,18 @@ import net.jolivier.s3api.model.VersioningConfiguration;
 public class MemoryBucket implements IBucket {
 
 	private static final class StoredObject {
+		private final Optional<String> _versionId;
+		private boolean _deleted;
 		private final byte[] _data;
 		private final String _contentType;
 		private final String _etag;
 		private final ZonedDateTime _modified;
 		private final Map<String, String> _metadata;
 
-		public StoredObject(byte[] data, String contentType, String etag, ZonedDateTime modified,
-				Map<String, String> metadata) {
+		public StoredObject(Optional<String> versionId, boolean deleted, byte[] data, String contentType, String etag,
+				ZonedDateTime modified, Map<String, String> metadata) {
+			_versionId = versionId;
+			_deleted = deleted;
 			_data = data;
 			_contentType = contentType;
 			_etag = etag;
@@ -89,7 +94,7 @@ public class MemoryBucket implements IBucket {
 	private PublicAccessBlockConfiguration _accessPolicy = PublicAccessBlockConfiguration.ALL_RESTRICTED;
 	private VersioningConfiguration _versioning = VersioningConfiguration.disabled();
 
-	private final Map<String, StoredObject> _objects = new ConcurrentHashMap<>();
+	private final Map<String, List<StoredObject>> _objects = new ConcurrentHashMap<>();
 
 	public static final IBucket create(Owner owner, String name, String location) {
 		return new MemoryBucket(requireNonNull(owner, "owner"), requireNonNull(name, "name"),
@@ -168,27 +173,59 @@ public class MemoryBucket implements IBucket {
 
 	@Override
 	public GetObjectResult getObject(String key, Optional<String> versionId) {
-		StoredObject stored = _objects.get(key);
-		if (stored != null)
-			return new GetObjectResult(stored.contentType(), stored.etag(), stored.modified(), stored.getMetadata(),
-					new ByteArrayInputStream(stored.data()));
+		List<StoredObject> stored = _objects.get(key);
+		if (stored != null && !stored.isEmpty()) {
+			StoredObject o = stored.get(stored.size() - 1);
+
+			if (versionId.isPresent()) {
+				o = stored.stream().filter(x -> x._versionId.isPresent() && x._versionId.get().equals(versionId.get()))
+						.findFirst().orElse(o);
+			}
+
+			return new GetObjectResult(o.contentType(), o.etag(), o.modified(), o.getMetadata(),
+					new ByteArrayInputStream(o.data()));
+		}
 
 		throw new NoSuchKeyException();
 	}
 
 	@Override
 	public HeadObjectResult headObject(String key, Optional<String> versionId) {
-		StoredObject stored = _objects.get(key);
-		if (stored != null)
-			return new HeadObjectResult(stored.contentType(), stored.etag(), stored.modified(), stored.getMetadata());
+		List<StoredObject> stored = _objects.get(key);
+		if (stored != null) {
+			StoredObject o = stored.get(stored.size() - 1);
+
+			if (versionId.isPresent()) {
+				o = stored.stream().filter(x -> x._versionId.isPresent() && x._versionId.get().equals(versionId.get()))
+						.findFirst().orElse(o);
+			}
+			return new HeadObjectResult(o.contentType(), o.etag(), o.modified(), o.getMetadata());
+		}
 
 		throw new NoSuchKeyException();
 	}
 
 	@Override
 	public boolean deleteObject(String key, Optional<String> versionId) {
-		StoredObject prev = _objects.remove(key);
-		return prev != null;
+		List<StoredObject> list = _objects.get(key);
+		if (list != null) {
+			if (versionId.isPresent()) {
+				return list.stream()
+						.filter(so -> so._versionId.isPresent() && so._versionId.get().equals(versionId.get()))
+						.findFirst().map(list::remove).orElse(Boolean.FALSE);
+			}
+
+			if (_versioning.isDisabled() || _versioning.isSuspended()) {
+				return list.stream().filter(so -> so._versionId.isEmpty()).findFirst().map(list::remove)
+						.orElse(Boolean.FALSE);
+			}
+
+			list.add(new StoredObject(
+					_versioning.isEnabled() ? Optional.of(S3MemoryImpl.versionGen()) : Optional.empty(), true, null,
+					null, null, ZonedDateTime.now(), Collections.emptyMap()));
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -197,8 +234,9 @@ public class MemoryBucket implements IBucket {
 		List<DeleteError> errors = new LinkedList<>();
 
 		for (ObjectIdentifier oi : request.getObjects()) {
-			StoredObject prev = _objects.remove(oi.getKey());
-			if (prev != null)
+			boolean result = deleteObject(oi.getKey(),
+					Strings.isNullOrEmpty(oi.getVersionId()) ? Optional.empty() : Optional.of(oi.getVersionId()));
+			if (result)
 				deleted.add(new Deleted(oi.getKey()));
 			else
 				errors.add(new DeleteError("NoSuchKey", oi.getKey(), "The specified key does not exist", null));
@@ -213,11 +251,18 @@ public class MemoryBucket implements IBucket {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			data.transferTo(baos);
-			byte[] bytes = baos.toByteArray();
-			StoredObject meta = new StoredObject(bytes, contentType.orElse("application/octet-stream"),
+			final byte[] bytes = baos.toByteArray();
+
+			Optional<String> versionId = Optional.empty();
+
+			if (_versioning.isEnabled())
+				versionId = Optional.of(S3MemoryImpl.versionGen());
+
+			final StoredObject meta = new StoredObject(versionId, false, bytes,
+					contentType.orElse("application/octet-stream"),
 					inputMd5.orElseGet(() -> BaseEncoding.base16().encode(Hashing.md5().hashBytes(bytes).asBytes())),
 					ZonedDateTime.now(), metadata);
-			_objects.put(key, meta);
+			_objects.computeIfAbsent(key, k -> new ArrayList<>()).add(meta);
 
 			return new PutObjectResult(meta.etag(), Optional.empty());
 		} catch (IOException e) {
@@ -251,7 +296,8 @@ public class MemoryBucket implements IBucket {
 		Set<String> commonPrefixes = new HashSet<>();
 		for (int i = startIndex; i < endIndex; ++i) {
 			String key = keys.get(i);
-			StoredObject metadata = _objects.get(key);
+			List<StoredObject> versions = _objects.get(key);
+			StoredObject metadata = versions.get(versions.size() - 1);
 			list.add(new ListObject(metadata.etag(), key, metadata.modified(), _owner, metadata.data().length));
 		}
 
