@@ -3,8 +3,10 @@ package net.jolivier.s3api.impl.exception;
 import org.eclipse.jetty.http.HttpStatus;
 
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import net.jolivier.s3api.AwsHeaders;
 import net.jolivier.s3api.NoSuchKeyException;
 
 /**
@@ -18,7 +20,11 @@ public class NoSuchKeyExceptionMapper implements ExceptionMapper<NoSuchKeyExcept
 
 	@Override
 	public Response toResponse(NoSuchKeyException e) {
-		return Response.status(HttpStatus.NOT_FOUND_404).build();
+		ResponseBuilder res = Response.status(HttpStatus.NOT_FOUND_404);
+
+		res.header(AwsHeaders.X_AMZ_DELETE_MARKER, e.isDeleteMarker());
+
+		return res.build();
 	}
 
 }

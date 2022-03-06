@@ -10,20 +10,30 @@ package net.jolivier.s3api;
  */
 public class NoSuchKeyException extends RuntimeException {
 
-	public NoSuchKeyException() {
+	private final boolean _deleteMarker;
+
+	public NoSuchKeyException(boolean deleteMarker) {
 		super();
+		_deleteMarker = deleteMarker;
 	}
 
-	public NoSuchKeyException(String message, Throwable cause) {
+	public NoSuchKeyException(boolean deleteMarker, String message, Throwable cause) {
 		super(message, cause);
+		_deleteMarker = deleteMarker;
 	}
 
-	public NoSuchKeyException(String message) {
+	public NoSuchKeyException(boolean deleteMarker, String message) {
 		super(message);
+		_deleteMarker = deleteMarker;
 	}
 
-	public NoSuchKeyException(Throwable cause) {
+	public NoSuchKeyException(boolean deleteMarker, Throwable cause) {
 		super(cause);
+		_deleteMarker = deleteMarker;
+	}
+
+	public final boolean isDeleteMarker() {
+		return _deleteMarker;
 	}
 
 }

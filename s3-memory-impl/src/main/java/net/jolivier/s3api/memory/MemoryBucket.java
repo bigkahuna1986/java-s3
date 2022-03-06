@@ -186,7 +186,7 @@ public class MemoryBucket implements IBucket {
 					new ByteArrayInputStream(o.data()));
 		}
 
-		throw new NoSuchKeyException();
+		throw new NoSuchKeyException(false);
 	}
 
 	@Override
@@ -202,7 +202,7 @@ public class MemoryBucket implements IBucket {
 			return new HeadObjectResult(o.contentType(), o.etag(), o.modified(), o.getMetadata());
 		}
 
-		throw new NoSuchKeyException();
+		throw new NoSuchKeyException(false);
 	}
 
 	@Override
@@ -326,21 +326,35 @@ public class MemoryBucket implements IBucket {
 		}
 
 		final int endIndex = Math.min(maxKeys, keys.size());
-		boolean truncated = endIndex < keys.size();
+		Optional<String> nextVersionIdMarker = Optional.empty();
+
+		int count = 0;
+		List<ObjectVersion> list = new ArrayList<>(keys.size());
+		for (int i = startIndex; i < endIndex; ++i) {
+			String key = keys.get(i);
+			List<StoredObject> versions = _objects.get(key);
+			for (int j = 0; j < versions.size(); j++) {
+				final StoredObject version = versions.get(j);
+				count++;
+				final boolean latest = j == (versions.size() - 1);
+				list.add(new ObjectVersion(_owner, key, _name, latest, version.modified(), version.etag(),
+						(long) version.data().length, "STANDARD"));
+				if (count >= maxKeys) {
+					if (!latest)
+						nextVersionIdMarker = versions.get(j + 1)._versionId;
+					i = endIndex;
+					break;
+				}
+			}
+		}
+
+		boolean truncated = list.size() >= maxKeys;
 		String nextMarker = null;
 		if (truncated)
 			nextMarker = keys.get(endIndex);
 
-		List<ObjectVersion> list = new ArrayList<>(keys.size());
-		for (int i = startIndex; i < endIndex; ++i) {
-			String key = keys.get(i);
-			StoredObject metadata = _objects.get(key);
-			list.add(new ObjectVersion(_owner, key, _name, true, metadata.modified(), metadata.etag(),
-					(long) metadata.data().length, "STANDARD"));
-		}
-
 		return new ListVersionsResult(truncated, marker.orElse(null), nextMarker, _name, prefix.orElse(null),
-				delimiter.orElse(null), encodingType.orElse(null), null, maxKeys,
+				delimiter.orElse(null), encodingType.orElse(null), nextVersionIdMarker.orElse(null), maxKeys,
 				prefix.map(Collections::singletonList).orElse(null), list);
 	}
 

@@ -6,8 +6,8 @@ public class AwsHeaders {
 	public static final String X_AMZ_DATE = "x-amz-date";
 	public static final String X_AMZ_VERSION_ID = "x-amz-version-id";
 	public static final String X_AMZ_METADATA_DIRECTIVE = "x-amz-metadata-directive";
-	
-	public static final String METADATA_PREFIX = "x-amz-meta-";
+	public static final String X_AMZ_DELETE_MARKER = "x-amz-delete-marker";
 
+	public static final String METADATA_PREFIX = "x-amz-meta-";
 
 }
