@@ -1,6 +1,5 @@
 package net.jolivier.s3api.http;
 
-import java.lang.reflect.Method;
 import java.net.URI;
 
 import org.slf4j.Logger;
@@ -40,7 +39,8 @@ public class SignatureFilter implements ContainerRequestFilter {
 
 	@Override
 	public void filter(ContainerRequestContext ctx) {
-		Method method = resourceInfo.getResourceMethod();
+		final String requestId = S3Context.createRequestId();
+
 		PublicAccessBlockConfiguration accessPolicy = PublicAccessBlockConfiguration.ALL_RESTRICTED;
 		final String bucket = (String) ctx.getProperty("bucket");
 
@@ -77,16 +77,17 @@ public class SignatureFilter implements ContainerRequestFilter {
 				ctx.setProperty("sigv4", sigv4);
 
 				if (!Strings.isNullOrEmpty(bucket))
-					ctx.setProperty("s3ctx", S3Context.bucketRestricted(bucket, user, ApiPoint.auth().findOwner(user)));
+					ctx.setProperty("s3ctx",
+							S3Context.bucketRestricted(requestId, bucket, user, ApiPoint.auth().findOwner(user)));
 				else
-					ctx.setProperty("s3ctx", S3Context.noBucket(user, ApiPoint.auth().findOwner(user)));
+					ctx.setProperty("s3ctx", S3Context.noBucket(requestId, user, ApiPoint.auth().findOwner(user)));
 
 			} catch (InvalidAuthException e) {
 				_logger.error(e.getLocalizedMessage());
 				ctx.abortWith(Response.status(Response.Status.FORBIDDEN).build());
 			}
 		} else {
-			ctx.setProperty("s3ctx", S3Context.bucketPublic(bucket, ApiPoint.auth().findOwner(bucket)));
+			ctx.setProperty("s3ctx", S3Context.bucketPublic(requestId, bucket, ApiPoint.auth().findOwner(bucket)));
 		}
 	}
 

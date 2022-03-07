@@ -25,6 +25,7 @@ import com.google.common.io.BaseEncoding;
 
 import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
+import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.DeleteError;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
@@ -180,6 +181,9 @@ public class MemoryBucket implements IBucket {
 			if (versionId.isPresent()) {
 				o = stored.stream().filter(x -> x._versionId.isPresent() && x._versionId.get().equals(versionId.get()))
 						.findFirst().orElse(o);
+				if (o._deleted)
+					throw new NoSuchKeyException(true);
+
 			}
 
 			return new GetObjectResult(o.contentType(), o.etag(), o.modified(), o.getMetadata(),
@@ -198,6 +202,8 @@ public class MemoryBucket implements IBucket {
 			if (versionId.isPresent()) {
 				o = stored.stream().filter(x -> x._versionId.isPresent() && x._versionId.get().equals(versionId.get()))
 						.findFirst().orElse(o);
+				if (o._deleted)
+					throw new NoSuchKeyException(true);
 			}
 			return new HeadObjectResult(o.contentType(), o.etag(), o.modified(), o.getMetadata());
 		}
@@ -221,7 +227,7 @@ public class MemoryBucket implements IBucket {
 			}
 
 			list.add(new StoredObject(
-					_versioning.isEnabled() ? Optional.of(S3MemoryImpl.versionGen()) : Optional.empty(), true, null,
+					_versioning.isEnabled() ? Optional.of(S3Context.createVersionId()) : Optional.empty(), true, null,
 					null, null, ZonedDateTime.now(), Collections.emptyMap()));
 			return true;
 		}
@@ -256,7 +262,7 @@ public class MemoryBucket implements IBucket {
 			Optional<String> versionId = Optional.empty();
 
 			if (_versioning.isEnabled())
-				versionId = Optional.of(S3MemoryImpl.versionGen());
+				versionId = Optional.of(S3Context.createVersionId());
 
 			final StoredObject meta = new StoredObject(versionId, false, bytes,
 					contentType.orElse("application/octet-stream"),
