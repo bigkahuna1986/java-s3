@@ -151,8 +151,8 @@ public class ApiTests {
 		s3.copyObject(CopyObjectRequest.builder().sourceBucket(bucket).sourceKey("key1").destinationBucket(bucket)
 				.destinationKey("prefix/key2").build());
 
-		System.out.println(s3.listObjects(ListObjectsRequest.builder().bucket(bucket).build()).contents().stream()
-				.map(S3Object::key).collect(Collectors.toList()));
+		System.out.println(s3.listObjects(ListObjectsRequest.builder().bucket(bucket).maxKeys(2000).build()).contents()
+				.stream().map(S3Object::key).collect(Collectors.toList()));
 
 		s3.deleteObjects(DeleteObjectsRequest.builder().bucket(bucket).delete(
 

@@ -25,6 +25,7 @@ public class EntryPoint {
 
 		final Logger logger = LoggerFactory.getLogger(EntryPoint.class);
 		SigTerm.configure();
+		S3MemoryImpl.configure(true);
 
 		ApiPoint.configure(S3MemoryImpl.INSTANCE, S3MemoryImpl.INSTANCE);
 

@@ -4,10 +4,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import com.google.common.primitives.Ints;
+
+import net.jolivier.s3api.RequestFailedException;
 
 public class ChunkedInputStream extends InputStream {
 
@@ -15,7 +18,7 @@ public class ChunkedInputStream extends InputStream {
 	private static final byte[] DELIMITER = ";".getBytes(UTF_8);
 
 	private final InputStream _source;
-	private final ByteBuffer _byteBuf = ByteBuffer.allocate(262_144);
+	private final ByteBuffer _byteBuf = ByteBuffer.allocate(256 * 1024);
 
 	private int _remainingInChunk = 0;
 
@@ -43,20 +46,24 @@ public class ChunkedInputStream extends InputStream {
 
 	// Really need to do a bulk read.
 	private byte[] readUntil(byte[] endSequence) throws IOException {
-		_byteBuf.clear();
-		while (!endsWith(_byteBuf.asReadOnlyBuffer(), endSequence)) {
-			final int c = _source.read();
-			if (c < 0)
-				return null;
+		try {
+			_byteBuf.clear();
+			while (!endsWith(_byteBuf.asReadOnlyBuffer(), endSequence)) {
+				final int c = _source.read();
+				if (c < 0)
+					return null;
 
-			final byte unsigned = (byte) (c & 0xFF);
-			_byteBuf.put(unsigned);
+				final byte unsigned = (byte) (c & 0xFF);
+				_byteBuf.put(unsigned);
+			}
+
+			final byte[] result = new byte[_byteBuf.position() - endSequence.length];
+			_byteBuf.rewind();
+			_byteBuf.get(result);
+			return result;
+		} catch (BufferOverflowException e) {
+			throw new RequestFailedException("Invalid chunk length");
 		}
-
-		final byte[] result = new byte[_byteBuf.position() - endSequence.length];
-		_byteBuf.rewind();
-		_byteBuf.get(result);
-		return result;
 	}
 
 	private static final int parseOrThrow(byte[] in) {

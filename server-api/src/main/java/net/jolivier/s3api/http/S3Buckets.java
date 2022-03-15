@@ -1,5 +1,7 @@
 package net.jolivier.s3api.http;
 
+import java.io.IOException;
+
 import org.glassfish.jersey.server.ContainerRequest;
 
 import jakarta.ws.rs.Consumes;
@@ -9,6 +11,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.BucketOptional;
@@ -16,6 +19,7 @@ import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.CreateBucketConfiguration;
+import net.jolivier.s3api.model.ErrorResponse;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
@@ -27,7 +31,6 @@ import net.jolivier.s3api.model.VersioningConfiguration;
  */
 @Path("/")
 public class S3Buckets {
-
 	/**
 	 * Head bucket, returns 200 or 404.
 	 * 
@@ -43,6 +46,8 @@ public class S3Buckets {
 	/**
 	 * Create a new bucket.
 	 * 
+	 * @throws IOException
+	 * 
 	 * @throws RequestFailedException if the bucket already exists.
 	 * 
 	 */
@@ -50,9 +55,11 @@ public class S3Buckets {
 	@PUT
 	@Consumes(MediaType.APPLICATION_XML)
 	@BucketOptional
-	public Response createBucket(@Context S3Context ctx, @Context ContainerRequest req, @Context UriInfo uriInfo) {
+	public Response createBucket(@Context S3Context ctx, @Context ContainerRequest req, @Context UriInfo uriInfo)
+			throws IOException {
 
-		if (uriInfo.getQueryParameters().containsKey("versioning")) {
+		MultivaluedMap<String, String> query = uriInfo.getQueryParameters();
+		if (query.containsKey("versioning")) {
 			VersioningConfiguration config = RequestUtils.readJaxbEntity(VersioningConfiguration.class,
 					req.getEntityStream());
 
@@ -62,7 +69,7 @@ public class S3Buckets {
 			return Response.ok().build();
 		}
 
-		if (uriInfo.getQueryParameters().containsKey("publicAccessBlock")) {
+		if (query.containsKey("publicAccessBlock")) {
 			PublicAccessBlockConfiguration config = RequestUtils.readJaxbEntity(PublicAccessBlockConfiguration.class,
 					req.getEntityStream());
 
@@ -72,8 +79,28 @@ public class S3Buckets {
 			return Response.ok().build();
 		}
 
+		if (query.containsKey("lifecycle") || query.containsKey("object-lock")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Lifecycle operations are not implemented", "", ctx.requestId())).build();
+		}
+
+		if (query.containsKey("logging")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Bucket logging operations are not implemented", "", ctx.requestId())).build();
+		}
+
+		if (query.containsKey("policy")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Bucket policy operations are not implemented", "", ctx.requestId())).build();
+		}
+
+		if (query.containsKey("encryption")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Bucket encryption operations are not implemented", "", ctx.requestId())).build();
+		}
+
 		String location = "us-east-1";
-		if (req.hasEntity()) {
+		if (req.hasEntity() && req.getLength() > 0) {
 			CreateBucketConfiguration config = RequestUtils.readJaxbEntity(CreateBucketConfiguration.class,
 					req.getEntityStream());
 			location = config.getLocation();

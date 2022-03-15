@@ -31,14 +31,15 @@ public class PathMatchingFilter implements ContainerRequestFilter {
 		final String bucket = segments.isEmpty() ? null : segments.get(0).getPath();
 
 		final URI requestUri = uriInfo.getRequestUri();
-		final String pathAfter = segments.size() > 1 ? String.join("/",
+		final String key = segments.size() > 1 ? String.join("/",
 				segments.subList(1, segments.size()).stream().map(PathSegment::getPath).collect(Collectors.toList()))
 				: "/";
 
-		final UriBuilder builder = UriBuilder.fromUri(requestUri).replacePath(pathAfter);
+		final UriBuilder builder = UriBuilder.fromUri(requestUri).replacePath(key);
 
 		final URI baseUri = uriInfo.getBaseUri();
 		ctx.setProperty("bucket", bucket);
+		ctx.setProperty("key", key);
 		ctx.setProperty(SignatureFilter.ORIG_URI, requestUri);
 		ctx.setRequestUri(baseUri, builder.build());
 

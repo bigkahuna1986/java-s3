@@ -2,6 +2,7 @@ package net.jolivier.s3api.http;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +40,20 @@ public enum RequestUtils {
 			Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 
 			return (T) jaxbUnmarshaller.unmarshal(new InputStreamReader(input));
+		} catch (JAXBException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T readJaxbEntity(Class<T> cls, String content) {
+
+		try {
+			JAXBContext jaxbContext = JAXBContext.newInstance(cls);
+
+			Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+
+			return (T) jaxbUnmarshaller.unmarshal(new StringReader(content));
 		} catch (JAXBException e) {
 			throw new RuntimeException(e);
 		}

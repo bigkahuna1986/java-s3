@@ -60,6 +60,8 @@ public class SignatureFilter implements ContainerRequestFilter {
 		if (accessPolicy.isRestrictPublicBuckets()) {
 			try {
 				final String receivedAuth = ctx.getHeaderString("Authorization");
+				if (Strings.isNullOrEmpty(receivedAuth))
+					throw new InvalidAuthException("No authorization header");
 				final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);
 				final User user = ApiPoint.auth().user(sigv4.accessKeyId());
 

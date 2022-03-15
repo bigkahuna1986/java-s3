@@ -59,6 +59,12 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	 */
 	public static final void configure(boolean defaultAccounts) {
 		if (defaultAccounts) {
+			for (int i = 1; i < 10; ++i) {
+				User u1 = new User("accesskey" + i, "secretkey" + i);
+				USERS.put(u1.accessKeyId(), u1);
+				USER_OWNER_MAPPING.put(u1.accessKeyId(), OWNER.getId());
+			}
+
 			USERS.put(USER.accessKeyId(), USER);
 			OWNERS.put(OWNER.getId(), OWNER);
 			USER_OWNER_MAPPING.put(USER.accessKeyId(), OWNER.getId());
@@ -69,11 +75,8 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	private static final IBucket bucket(String name) {
 		IBucket bucket = BUCKETS.get(name);
-		if (bucket == null) {
-			System.err.println("No bucket " + name);
-			Thread.dumpStack();
+		if (bucket == null) 
 			throw new NoSuchBucketException(name);
-		}
 
 		return bucket;
 	}

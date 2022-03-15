@@ -8,29 +8,22 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import net.jolivier.s3api.NoSuchBucketException;
+import net.jolivier.s3api.InternalErrorException;
 import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.ErrorResponse;
 
-/**
- * Maps {@link net.jolivier.s3api.NoSuchBucketException} to an http 404
- * response.
- * 
- * @author josho
- *
- */
 @Provider
-public class NoSuchBucketExceptionMapper implements ExceptionMapper<NoSuchBucketException> {
+public class InternalErrorExceptionMapper implements ExceptionMapper<InternalErrorException> {
 
 	@Context
 	private ContainerRequest request;
 
 	@Override
-	public Response toResponse(NoSuchBucketException e) {
-		ResponseBuilder res = Response.status(HttpStatus.NOT_FOUND_404);
+	public Response toResponse(InternalErrorException exception) {
+		ResponseBuilder res = Response.status(HttpStatus.INTERNAL_SERVER_ERROR_500);
 		final S3Context ctx = (S3Context) request.getProperty("s3ctx");
-		res.entity(new ErrorResponse("NoSuchBucket",
-				"The bucket you requested does not exist (it may have been deleted)", ctx.bucket(), ctx.requestId()));
+		res.entity(new ErrorResponse("InternalError",
+				"The server encountered an unexpected error, please try again later", "error", ctx.requestId()));
 
 		return res.build();
 	}

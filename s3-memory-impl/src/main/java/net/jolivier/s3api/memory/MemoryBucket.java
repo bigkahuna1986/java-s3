@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 
+import net.jolivier.s3api.InternalErrorException;
 import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.S3Context;
@@ -92,7 +93,7 @@ public class MemoryBucket implements IBucket {
 	private final String _name;
 	private final String _location;
 
-	private PublicAccessBlockConfiguration _accessPolicy = PublicAccessBlockConfiguration.ALL_RESTRICTED;
+	private PublicAccessBlockConfiguration _accessPolicy = PublicAccessBlockConfiguration.ALL_ALLOWED;
 	private VersioningConfiguration _versioning = VersioningConfiguration.disabled();
 
 	private final Map<String, List<StoredObject>> _objects = new ConcurrentHashMap<>();
@@ -272,7 +273,7 @@ public class MemoryBucket implements IBucket {
 
 			return new PutObjectResult(meta.etag(), Optional.empty());
 		} catch (IOException e) {
-			throw new RequestFailedException(e);
+			throw new InternalErrorException(e);
 		}
 	}
 
@@ -300,11 +301,15 @@ public class MemoryBucket implements IBucket {
 
 		List<ListObject> list = new ArrayList<>(keys.size());
 		Set<String> commonPrefixes = new HashSet<>();
-		for (int i = startIndex; i < endIndex; ++i) {
+		int i = startIndex;
+		while (list.size() < maxKeys && i < endIndex) {
 			String key = keys.get(i);
 			List<StoredObject> versions = _objects.get(key);
-			StoredObject metadata = versions.get(versions.size() - 1);
-			list.add(new ListObject(metadata.etag(), key, metadata.modified(), _owner, metadata.data().length));
+			if (!versions.isEmpty()) {
+				StoredObject metadata = versions.get(versions.size() - 1);
+				list.add(new ListObject(metadata.etag(), key, metadata.modified(), _owner, metadata.data().length));
+			}
+			i++;
 		}
 
 		ListBucketResult result = new ListBucketResult(truncated, marker.orElse(null), nextMarker, _name,

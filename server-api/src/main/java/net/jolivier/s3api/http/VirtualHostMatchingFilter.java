@@ -28,6 +28,7 @@ public class VirtualHostMatchingFilter implements ContainerRequestFilter {
 		final String bucket = host.substring(0, index);
 
 		ctx.setProperty("bucket", bucket);
+		ctx.setProperty("key", ctx.getUriInfo().getRequestUri().getPath().replaceFirst("/", ""));
 
 	}
 

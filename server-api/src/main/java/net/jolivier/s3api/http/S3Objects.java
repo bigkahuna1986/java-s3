@@ -13,8 +13,6 @@ import java.util.Optional;
 
 import org.glassfish.jersey.server.ContainerRequest;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
@@ -144,7 +142,7 @@ public class S3Objects {
 				throw new InvalidAuthException("Wrong owner");
 
 			final String srcKey = sourceKey.substring(idx + 1);
-			final boolean copyMetadata = "replace".equals(request.getHeaderString(AwsHeaders.X_AMZ_METADATA_DIRECTIVE));
+			final boolean copyMetadata = "copy".equals(request.getHeaderString(AwsHeaders.X_AMZ_METADATA_DIRECTIVE));
 			final CopyObjectResult result = ApiPoint.data().copyObject(ctx, srcBucket, srcKey, ctx.bucket(), key,
 					copyMetadata, copyMetadata ? Collections.emptyMap() : RequestUtils.metadataHeaders(request));
 
@@ -153,7 +151,8 @@ public class S3Objects {
 
 		// putObject
 		else {
-			try (InputStream in = new ChunkedInputStream(request.getEntityStream())) {
+			try (InputStream in = isV4signed(request) ? new ChunkedInputStream(request.getEntityStream())
+					: request.getEntityStream()) {
 
 				final PutObjectResult result = ApiPoint.data().putObject(ctx, ctx.bucket(), key,
 						Optional.ofNullable(inputMd5), Optional.ofNullable(contentType), metadataHeaders(request), in);
@@ -169,6 +168,11 @@ public class S3Objects {
 		}
 	}
 
+	private static final boolean isV4signed(ContainerRequest req) {
+		String h = req.getHeaderString(AwsHeaders.X_AMZ_CONTENT_SHA256);
+		return h != null && h.equals(AwsHeaders.STREAMING_AWS4_HMAC_SHA256_PAYLOAD);
+	}
+
 	/**
 	 * List the objects in a bucket. Enforces a maxKeys 1000 value.
 	 * 
@@ -181,8 +185,11 @@ public class S3Objects {
 	public Response listObjectsOrListBuckets(@Context S3Context ctx, @QueryParam("delimiter") String delimiter,
 			@QueryParam("encoding-type") String encodingType, @QueryParam("marker") String marker,
 			@QueryParam("VersionIdMarker") String versionIdMarker,
-			@DefaultValue("1000") @Max(1000) @Min(1) @QueryParam("max-keys") int maxKeys,
-			@QueryParam("prefix") String prefix, @Context UriInfo uriInfo) {
+			@DefaultValue("1000") @QueryParam("max-keys") int maxKeys, @QueryParam("prefix") String prefix,
+			@Context UriInfo uriInfo) {
+
+		if (maxKeys > 1000 || maxKeys < 1)
+			throw new RequestFailedException("Invalid maxKeys");
 
 		// List Buckets
 		if (ctx.optBucket().isEmpty()) {

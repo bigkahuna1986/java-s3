@@ -29,8 +29,9 @@ public class NoSuchKeyExceptionMapper implements ExceptionMapper<NoSuchKeyExcept
 	public Response toResponse(NoSuchKeyException e) {
 		ResponseBuilder res = Response.status(HttpStatus.NOT_FOUND_404);
 		final S3Context ctx = (S3Context) request.getProperty("s3ctx");
+		final String key = (String) request.getProperty("key");
 		res.entity(new ErrorResponse("NoSuchKey", "The object you requested does not exist (it may have been deleted)",
-				"key", ctx.requestId()));
+				key, ctx == null ? S3Context.createRequestId() : ctx.requestId()));
 
 		res.header(AwsHeaders.X_AMZ_DELETE_MARKER, e.isDeleteMarker());
 
