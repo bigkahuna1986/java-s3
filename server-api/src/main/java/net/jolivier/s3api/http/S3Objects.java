@@ -41,6 +41,7 @@ import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
+import net.jolivier.s3api.model.ErrorResponse;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
@@ -57,8 +58,26 @@ public class S3Objects {
 	 */
 	@Path("/{key: .+}")
 	@GET
-	public Response getObject(@Context S3Context ctx, @NotNull @PathParam("key") String key,
-			@QueryParam("versionId") String versionId) {
+	public Response getObject(@Context S3Context ctx, @Context ContainerRequest request,
+			@NotNull @PathParam("key") String key, @QueryParam("versionId") String versionId) {
+
+		MultivaluedMap<String, String> query = request.getUriInfo().getQueryParameters();
+
+		if (query.containsKey("legal-hold")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Object hold operations are not implemented", "", ctx.requestId())).build();
+		}
+
+		if (query.containsKey("retention")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Object retention operations are not implemented", "", ctx.requestId())).build();
+		}
+
+		if (query.containsKey("object-lock")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Object lock operations are not implemented", "", ctx.requestId())).build();
+		}
+
 		final GetObjectResult result = ApiPoint.data().getObject(ctx, ctx.bucket(), key,
 				Optional.ofNullable(versionId));
 		return RequestUtils.writeMetadataHeaders(Response.ok(result.getData()), result.getMetadata())
@@ -127,6 +146,23 @@ public class S3Objects {
 	public Response putOrCopy(@Context S3Context ctx, @NotNull @PathParam("key") String key,
 			@HeaderParam("Content-MD5") String inputMd5, @HeaderParam("Content-Type") String contentType,
 			@HeaderParam(X_AMZ_COPY_SOURCE) String sourceKey, @Context ContainerRequest request) {
+
+		MultivaluedMap<String, String> query = request.getUriInfo().getQueryParameters();
+
+		if (query.containsKey("legal-hold")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Object hold operations are not implemented", "", ctx.requestId())).build();
+		}
+
+		if (query.containsKey("retention")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Object retention operations are not implemented", "", ctx.requestId())).build();
+		}
+
+		if (query.containsKey("object-lock")) {
+			return Response.status(501).entity(new ErrorResponse("NotImplemented",
+					"Object lock operations are not implemented", "", ctx.requestId())).build();
+		}
 
 		// copyObject
 		if (sourceKey != null) {
