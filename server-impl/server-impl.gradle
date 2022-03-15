@@ -1,7 +1,7 @@
 
 ext {
-        jettyVersion= '11.0.7'
-        jerseyVersion = '3.0.3'
+        jettyVersion= '11.0.8'
+        jerseyVersion = '3.0.4'
 }
 
 dependencies {
@@ -16,18 +16,18 @@ dependencies {
     api "org.glassfish.jersey.containers:jersey-container-jetty-servlet:$jerseyVersion"
     api "org.glassfish.jersey.containers:jersey-container-jetty-http:$jerseyVersion"
     
-    testImplementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.1'
-	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.1'
-	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.17.1'
-	testImplementation group: 'org.slf4j', name: 'jcl-over-slf4j', version: '1.7.35'
-	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-jul', version: '2.17.1'
-    testImplementation "software.amazon.awssdk:s3:2.17.118"
+    testImplementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.2'
+	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.2'
+	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.17.2'
+	testImplementation group: 'org.slf4j', name: 'jcl-over-slf4j', version: '1.7.36'
+	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-jul', version: '2.17.2'
+    testImplementation "software.amazon.awssdk:s3:2.17.149"
     testImplementation 'junit:junit:4.13'
 }
 
 configurations.all {
   resolutionStrategy {
-    force 'org.slf4j:slf4j-api:1.7.35'
+    force 'org.slf4j:slf4j-api:1.7.36'
   }
 }
 

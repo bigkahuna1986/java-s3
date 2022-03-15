@@ -1,14 +1,14 @@
 
 dependencies {
   	api(project(":s3-model"))
-  	implementation group: 'com.google.guava', name: 'guava', version: '31.0.1-jre'
+  	implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
 	
     testImplementation 'junit:junit:4.13'
 }
 
 configurations.all {
   resolutionStrategy {
-    force 'org.slf4j:slf4j-api:1.7.35'
+    force 'org.slf4j:slf4j-api:1.7.36'
   }
 }
 
