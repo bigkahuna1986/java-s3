@@ -301,6 +301,11 @@ public class MemoryBucket implements IBucket {
 			int idx = keys.indexOf(marker.get());
 			if (idx >= 0)
 				startIndex = idx + 1;
+			else {
+				return new ListBucketResult(false, marker.orElse(null), null, _name, prefix.orElse(null),
+						delimiter.orElse(null), maxKeys, encodingType.orElse(null), new ArrayList<>(),
+						Collections.emptyList());
+			}
 		}
 
 		final int endIndex = Math.min(startIndex + maxKeys, keys.size());

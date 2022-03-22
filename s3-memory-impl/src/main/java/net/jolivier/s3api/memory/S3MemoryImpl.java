@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.io.BaseEncoding;
 
+import net.jolivier.s3api.ConflictException;
 import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.RequestFailedException;
@@ -165,7 +166,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	public boolean deleteBucket(S3Context ctx, String bucket) {
 		IBucket iBucket = BUCKETS.get(bucket);
 		if (!iBucket.isEmpty())
-			throw new RequestFailedException("Unable to delete bucket (Still has objects)");
+			throw new ConflictException(bucket);
 
 		return BUCKETS.remove(bucket) != null;
 	}

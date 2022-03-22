@@ -3,6 +3,7 @@ package net.jolivier.s3api.http;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +16,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import net.jolivier.s3api.AwsHeaders;
 import uk.co.lucasweb.aws.v4.signer.HttpRequest;
@@ -57,6 +59,28 @@ public enum RequestUtils {
 		} catch (JAXBException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public static String writeJaxbEntity(Object xml) {
+		try {
+			JAXBContext jaxb = JAXBContext.newInstance(xml.getClass());
+
+			Marshaller marshaller = jaxb.createMarshaller();
+
+//			marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+
+			marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
+
+			StringWriter writer = new StringWriter();
+
+			writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+			marshaller.marshal(xml, writer);
+
+			return writer.toString();
+		} catch (JAXBException e) {
+			throw new RuntimeException(e);
+		}
+
 	}
 
 	public static final String calculateV4Sig(ContainerRequestContext request, URI requestUri, String signedHeaders,

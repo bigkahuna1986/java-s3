@@ -228,6 +228,33 @@ public class ApiTests {
 		});
 
 		assertEquals("key ", 404, exception.statusCode());
+		assertEquals("error code ", "NoSuchKey", exception.awsErrorDetails().errorCode());
+
+	}
+
+	@Test
+	public void invalidMaxKeys() {
+		final S3ClientBuilder s3Builder = S3Client.builder()
+				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
+
+		s3Builder.region(Region.US_EAST_1).endpointOverride(ENDPOINT)
+				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+
+		final S3Client s3 = s3Builder.build();
+
+		String bucket = randomBucket();
+
+		s3.createBucket(CreateBucketRequest.builder().bucket(bucket)
+
+				.createBucketConfiguration(CreateBucketConfiguration.builder().locationConstraint("us-west-2").build())
+
+				.build());
+
+		S3Exception exception = assertThrows(S3Exception.class, () -> {
+			s3.getObject(GetObjectRequest.builder().bucket(bucket).key("key1").build());
+		});
+
+		assertEquals("key ", 404, exception.statusCode());
 
 	}
 

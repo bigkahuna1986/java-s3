@@ -4,13 +4,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.auth.S3Context;
-import net.jolivier.s3api.model.ErrorResponse;
+import net.jolivier.s3api.http.RequestUtils;
+import net.jolivier.s3api.model.error.ErrorResponse;
 
 /**
  * Maps {@link net.jolivier.s3api.NoSuchBucketException} to an http 404
@@ -27,16 +28,15 @@ public class NoSuchBucketExceptionMapper implements ExceptionMapper<NoSuchBucket
 
 	@Override
 	public Response toResponse(NoSuchBucketException e) {
-		ResponseBuilder res = Response.status(HttpStatus.NOT_FOUND_404);
 		final S3Context ctx = (S3Context) request.getProperty("s3ctx");
 
 		final String requestId = ctx != null ? ctx.requestId() : S3Context.createRequestId();
 		final String bucket = e.getLocalizedMessage();
 
-		res.entity(new ErrorResponse("NoSuchBucket",
-				"The bucket you requested does not exist (it may have been deleted)", bucket, requestId));
-
-		return res.build();
+		return Response.status(HttpStatus.NOT_FOUND_404)
+				.entity(RequestUtils.writeJaxbEntity(new ErrorResponse("NoSuchBucket",
+						"The bucket you requested does not exist (it may have been deleted)", bucket, requestId)))
+				.type(MediaType.APPLICATION_XML_TYPE).build();
 	}
 
 }

@@ -1,4 +1,4 @@
-package net.jolivier.s3api.model;
+package net.jolivier.s3api.model.error;
 
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;

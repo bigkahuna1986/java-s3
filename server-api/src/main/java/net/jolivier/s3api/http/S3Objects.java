@@ -37,12 +37,12 @@ import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.NoSuchKeyException;
+import net.jolivier.s3api.NotImplementedException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
-import net.jolivier.s3api.model.ErrorResponse;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
@@ -66,18 +66,15 @@ public class S3Objects {
 		MultivaluedMap<String, String> query = request.getUriInfo().getQueryParameters();
 
 		if (query.containsKey("legal-hold")) {
-			return Response.status(501).entity(new ErrorResponse("NotImplemented",
-					"Object hold operations are not implemented", "", ctx.requestId())).build();
+			throw new NotImplementedException("Object hold operations are not implemented");
 		}
 
 		if (query.containsKey("retention")) {
-			return Response.status(501).entity(new ErrorResponse("NotImplemented",
-					"Object retention operations are not implemented", "", ctx.requestId())).build();
+			throw new NotImplementedException("Object retention operations are not implemented");
 		}
 
 		if (query.containsKey("object-lock")) {
-			return Response.status(501).entity(new ErrorResponse("NotImplemented",
-					"Object lock operations are not implemented", "", ctx.requestId())).build();
+			throw new NotImplementedException("Object lock operations are not implemented");
 		}
 
 		final GetObjectResult result = ApiPoint.data().getObject(ctx, ctx.bucket(), key,
@@ -157,18 +154,15 @@ public class S3Objects {
 		MultivaluedMap<String, String> query = request.getUriInfo().getQueryParameters();
 
 		if (query.containsKey("legal-hold")) {
-			return Response.status(501).entity(new ErrorResponse("NotImplemented",
-					"Object hold operations are not implemented", "", ctx.requestId())).build();
+			throw new NotImplementedException("Object hold operations are not implemented");
 		}
 
 		if (query.containsKey("retention")) {
-			return Response.status(501).entity(new ErrorResponse("NotImplemented",
-					"Object retention operations are not implemented", "", ctx.requestId())).build();
+			throw new NotImplementedException("Object retention operations are not implemented");
 		}
 
 		if (query.containsKey("object-lock")) {
-			return Response.status(501).entity(new ErrorResponse("NotImplemented",
-					"Object lock operations are not implemented", "", ctx.requestId())).build();
+			throw new NotImplementedException("Object lock operations are not implemented");
 		}
 
 		// copyObject

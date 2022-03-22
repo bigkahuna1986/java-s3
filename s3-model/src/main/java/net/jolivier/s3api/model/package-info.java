@@ -1,5 +1,7 @@
 @XmlSchema(namespace = "http://s3.amazonaws.com/doc/2006-03-01/", elementFormDefault = XmlNsForm.QUALIFIED, xmlns = {
-		@XmlNs(prefix = "ns1", namespaceURI = "http://s3.amazonaws.com/doc/2006-03-01/") })
+		@XmlNs(prefix = "", namespaceURI = "http://s3.amazonaws.com/doc/2006-03-01/") }
+
+)
 
 package net.jolivier.s3api.model;
 

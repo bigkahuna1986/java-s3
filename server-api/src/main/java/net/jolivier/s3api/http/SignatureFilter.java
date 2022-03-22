@@ -7,10 +7,13 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.Provider;
@@ -29,14 +32,12 @@ import net.jolivier.s3api.model.User;
  *
  */
 @Provider
+@Singleton
 public class SignatureFilter implements ContainerRequestFilter {
 
 	private static final Logger _logger = LoggerFactory.getLogger(SignatureFilter.class);
 
 	public static final String ORIG_URI = "originalUri";
-
-	@Context
-	private ResourceInfo resourceInfo;
 
 	@Override
 	public void filter(ContainerRequestContext ctx) {
@@ -53,8 +54,9 @@ public class SignatureFilter implements ContainerRequestFilter {
 				throw new RequestFailedException("Invalid bucket name format: " + bucket);
 
 			// If bucket doesn't yet exist and we aren't creating it then send 404.
-			if (!"PUT".equals(ctx.getMethod()) && !ApiPoint.data().bucketExists(bucket))
+			if (!"PUT".equals(ctx.getMethod()) && !ApiPoint.data().bucketExists(bucket)) {
 				throw new NoSuchBucketException(bucket);
+			}
 
 			accessPolicy = ApiPoint.data().internalPublicAccessBlock(bucket).orElse(accessPolicy);
 		}
