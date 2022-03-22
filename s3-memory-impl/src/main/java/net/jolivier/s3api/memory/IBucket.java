@@ -25,6 +25,8 @@ public interface IBucket {
 	public ZonedDateTime created();
 	
 	public String location();
+	
+	public boolean isEmpty();
 
 	public VersioningConfiguration getBucketVersioning();
 

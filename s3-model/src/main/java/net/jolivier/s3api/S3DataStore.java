@@ -34,6 +34,9 @@ import net.jolivier.s3api.model.VersioningConfiguration;
 public interface S3DataStore {
 
 	// buckets
+
+	public boolean bucketExists(String bucket);
+
 	public boolean headBucket(S3Context ctx, String bucket);
 
 	public boolean createBucket(S3Context ctx, String bucket, String location);

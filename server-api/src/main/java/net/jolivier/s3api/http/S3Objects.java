@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import org.glassfish.jersey.server.ContainerRequest;
@@ -45,6 +46,7 @@ import net.jolivier.s3api.model.ErrorResponse;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
+import net.jolivier.s3api.model.ObjectIdentifier;
 import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.PutObjectResult;
 
@@ -126,6 +128,11 @@ public class S3Objects {
 
 		final DeleteObjectsRequest req = RequestUtils.readJaxbEntity(DeleteObjectsRequest.class,
 				request.getEntityStream());
+
+		if (req.getObjects().size() > 1000) {
+			final List<ObjectIdentifier> objects = req.getObjects();
+			req.setObjects(objects.subList(0, 1000));
+		}
 
 		final DeleteResult result = ApiPoint.data().deleteObjects(ctx, ctx.bucket(), req);
 

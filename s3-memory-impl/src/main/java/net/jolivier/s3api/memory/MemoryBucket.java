@@ -19,6 +19,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
@@ -44,6 +47,8 @@ import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
 public class MemoryBucket implements IBucket {
+
+	private static final Logger _logger = LoggerFactory.getLogger(MemoryBucket.class);
 
 	private static final class StoredObject {
 		private final Optional<String> _versionId;
@@ -133,6 +138,11 @@ public class MemoryBucket implements IBucket {
 	@Override
 	public ZonedDateTime created() {
 		return _created;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return _objects.isEmpty();
 	}
 
 	@Override
@@ -290,14 +300,15 @@ public class MemoryBucket implements IBucket {
 		if (marker.isPresent()) {
 			int idx = keys.indexOf(marker.get());
 			if (idx >= 0)
-				startIndex = idx;
+				startIndex = idx + 1;
 		}
 
-		final int endIndex = Math.min(maxKeys, keys.size());
-		boolean truncated = endIndex < keys.size();
-		String nextMarker = null;
-		if (truncated)
-			nextMarker = keys.get(endIndex);
+		final int endIndex = Math.min(startIndex + maxKeys, keys.size());
+
+		if (startIndex == endIndex)
+			throw new RequestFailedException("Invalid key marker " + marker.orElse("NA"));
+
+		boolean truncated = false;
 
 		List<ListObject> list = new ArrayList<>(keys.size());
 		Set<String> commonPrefixes = new HashSet<>();
@@ -310,6 +321,12 @@ public class MemoryBucket implements IBucket {
 				list.add(new ListObject(metadata.etag(), key, metadata.modified(), _owner, metadata.data().length));
 			}
 			i++;
+		}
+
+		String nextMarker = null;
+		if (endIndex < keys.size()) {
+			nextMarker = keys.get(endIndex);
+			truncated = true;
 		}
 
 		ListBucketResult result = new ListBucketResult(truncated, marker.orElse(null), nextMarker, _name,

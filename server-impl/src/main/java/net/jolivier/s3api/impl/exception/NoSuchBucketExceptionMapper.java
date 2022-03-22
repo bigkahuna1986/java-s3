@@ -29,8 +29,12 @@ public class NoSuchBucketExceptionMapper implements ExceptionMapper<NoSuchBucket
 	public Response toResponse(NoSuchBucketException e) {
 		ResponseBuilder res = Response.status(HttpStatus.NOT_FOUND_404);
 		final S3Context ctx = (S3Context) request.getProperty("s3ctx");
+
+		final String requestId = ctx != null ? ctx.requestId() : S3Context.createRequestId();
+		final String bucket = e.getLocalizedMessage();
+
 		res.entity(new ErrorResponse("NoSuchBucket",
-				"The bucket you requested does not exist (it may have been deleted)", ctx.bucket(), ctx.requestId()));
+				"The bucket you requested does not exist (it may have been deleted)", bucket, requestId));
 
 		return res.build();
 	}

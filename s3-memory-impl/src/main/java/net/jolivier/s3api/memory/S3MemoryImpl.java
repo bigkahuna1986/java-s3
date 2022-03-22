@@ -75,10 +75,15 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	private static final IBucket bucket(String name) {
 		IBucket bucket = BUCKETS.get(name);
-		if (bucket == null) 
+		if (bucket == null)
 			throw new NoSuchBucketException(name);
 
 		return bucket;
+	}
+
+	@Override
+	public boolean bucketExists(String bucket) {
+		return BUCKETS.containsKey(bucket);
 	}
 
 	@Override
@@ -158,6 +163,10 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	@Override
 	public boolean deleteBucket(S3Context ctx, String bucket) {
+		IBucket iBucket = BUCKETS.get(bucket);
+		if (!iBucket.isEmpty())
+			throw new RequestFailedException("Unable to delete bucket (Still has objects)");
+
 		return BUCKETS.remove(bucket) != null;
 	}
 

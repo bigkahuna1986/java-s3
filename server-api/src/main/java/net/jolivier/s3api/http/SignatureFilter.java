@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.Provider;
 import net.jolivier.s3api.InvalidAuthException;
+import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.AwsSigV4;
 import net.jolivier.s3api.auth.S3Context;
@@ -50,6 +51,10 @@ public class SignatureFilter implements ContainerRequestFilter {
 		if (!Strings.isNullOrEmpty(bucket)) {
 			if (!RequestUtils.BUCKET_REGEX.matcher(bucket).matches())
 				throw new RequestFailedException("Invalid bucket name format: " + bucket);
+
+			// If bucket doesn't yet exist and we aren't creating it then send 404.
+			if (!"PUT".equals(ctx.getMethod()) && !ApiPoint.data().bucketExists(bucket))
+				throw new NoSuchBucketException(bucket);
 
 			accessPolicy = ApiPoint.data().internalPublicAccessBlock(bucket).orElse(accessPolicy);
 		}

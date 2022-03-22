@@ -127,7 +127,7 @@ public class S3Buckets {
 
 			return Response.noContent().build();
 		}
-
+		
 		if (!ApiPoint.data().deleteBucket(ctx, ctx.bucket()))
 			throw new RequestFailedException();
 
