@@ -238,6 +238,9 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		if (!BUCKETS.containsKey(dstName))
 			throw new NoSuchBucketException(dstName);
 
+		if (srcName.equals(dstName) && srcKey.equals(dstKey))
+			throw new RequestFailedException(dstKey);
+
 		final IBucket srcBucket = bucket(srcName);
 		final IBucket dstBucket = bucket(dstName);
 

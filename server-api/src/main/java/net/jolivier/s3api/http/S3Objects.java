@@ -27,10 +27,12 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
+import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.AwsHeaders;
 import net.jolivier.s3api.BucketOptional;
@@ -38,6 +40,7 @@ import net.jolivier.s3api.InvalidAuthException;
 import net.jolivier.s3api.NoSuchBucketException;
 import net.jolivier.s3api.NoSuchKeyException;
 import net.jolivier.s3api.NotImplementedException;
+import net.jolivier.s3api.PreconditionFailedException;
 import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.model.CopyObjectResult;
@@ -79,6 +82,17 @@ public class S3Objects {
 
 		final GetObjectResult result = ApiPoint.data().getObject(ctx, ctx.bucket(), key,
 				Optional.ofNullable(versionId));
+
+		final ResponseBuilder conditionalResponse = request.evaluatePreconditions(
+				Date.from(result.getModified().toInstant()), new EntityTag(result.getEtag(), false));
+		if (conditionalResponse != null) {
+			final Response res = conditionalResponse.build();
+			if (res.getStatus() == Status.PRECONDITION_FAILED.getStatusCode())
+				throw new PreconditionFailedException(key);
+
+			return res;
+		}
+
 		return RequestUtils.writeMetadataHeaders(Response.ok(result.getData()), result.getMetadata())
 				.type(result.getContentType()).tag(result.getEtag())
 				.lastModified(Date.from(result.getModified().toInstant())).build();

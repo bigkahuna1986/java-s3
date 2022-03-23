@@ -11,12 +11,14 @@ import net.jolivier.s3api.http.ProjectFeature;
 import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
 import net.jolivier.s3api.http.SignatureFilter;
+import net.jolivier.s3api.http.filter.RangeResponseFilter;
 import net.jolivier.s3api.impl.exception.ConflictExceptionMapper;
 import net.jolivier.s3api.impl.exception.InternalErrorExceptionMapper;
 import net.jolivier.s3api.impl.exception.InvalidAuthExceptionMapper;
 import net.jolivier.s3api.impl.exception.NoSuchBucketExceptionMapper;
 import net.jolivier.s3api.impl.exception.NoSuchKeyExceptionMapper;
 import net.jolivier.s3api.impl.exception.NotImplementedExceptionMapper;
+import net.jolivier.s3api.impl.exception.PreconditionFailedExceptionMapper;
 import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
 
 public class S3Server {
@@ -31,9 +33,11 @@ public class S3Server {
 		config.register(InternalErrorExceptionMapper.class);
 		config.register(ConflictExceptionMapper.class);
 		config.register(NotImplementedExceptionMapper.class);
+		config.register(PreconditionFailedExceptionMapper.class);
 
 		config.register(PathMatchingFilter.class);
 		config.register(SignatureFilter.class);
+		config.register(RangeResponseFilter.class);
 
 		config.register(ProjectFeature.class);
 

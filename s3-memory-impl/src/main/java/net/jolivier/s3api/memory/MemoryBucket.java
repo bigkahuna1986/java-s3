@@ -98,7 +98,7 @@ public class MemoryBucket implements IBucket {
 	private final String _name;
 	private final String _location;
 
-	private PublicAccessBlockConfiguration _accessPolicy = PublicAccessBlockConfiguration.ALL_ALLOWED;
+	private PublicAccessBlockConfiguration _accessPolicy = PublicAccessBlockConfiguration.ALL_RESTRICTED;
 	private VersioningConfiguration _versioning = VersioningConfiguration.disabled();
 
 	private final Map<String, List<StoredObject>> _objects = new ConcurrentHashMap<>();
@@ -275,10 +275,11 @@ public class MemoryBucket implements IBucket {
 			if (_versioning.isEnabled())
 				versionId = Optional.of(S3Context.createVersionId());
 
+			String etag = inputMd5
+					.orElseGet(() -> BaseEncoding.base16().encode(Hashing.md5().hashBytes(bytes).asBytes()));
+
 			final StoredObject meta = new StoredObject(versionId, false, bytes,
-					contentType.orElse("application/octet-stream"),
-					inputMd5.orElseGet(() -> BaseEncoding.base16().encode(Hashing.md5().hashBytes(bytes).asBytes())),
-					ZonedDateTime.now(), metadata);
+					contentType.orElse("application/octet-stream"), etag, ZonedDateTime.now(), metadata);
 			_objects.computeIfAbsent(key, k -> new ArrayList<>()).add(meta);
 
 			return new PutObjectResult(meta.etag(), Optional.empty());
