@@ -9,7 +9,6 @@ import java.net.URI;
 import java.security.SecureRandom;
 
 import org.eclipse.jetty.server.Server;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

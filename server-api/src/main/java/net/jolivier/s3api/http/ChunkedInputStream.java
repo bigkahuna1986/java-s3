@@ -14,6 +14,9 @@ import net.jolivier.s3api.RequestFailedException;
 
 public class ChunkedInputStream extends InputStream {
 
+	static {
+	}
+
 	private static final byte[] CRLF = "\r\n".getBytes(UTF_8);
 	private static final byte[] DELIMITER = ";".getBytes(UTF_8);
 

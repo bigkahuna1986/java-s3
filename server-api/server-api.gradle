@@ -8,6 +8,8 @@ dependencies {
     implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
     
+    implementation group: 'io.netty', name: 'netty-buffer', version: '4.1.75.Final'
+    
     implementation "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
     implementation "org.glassfish.jersey.ext:jersey-bean-validation:$jerseyVersion"
     implementation "org.glassfish.jersey.media:jersey-media-jaxb:$jerseyVersion"

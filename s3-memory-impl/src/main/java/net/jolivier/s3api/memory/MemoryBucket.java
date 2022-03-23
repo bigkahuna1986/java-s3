@@ -19,9 +19,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
@@ -47,8 +44,6 @@ import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
 public class MemoryBucket implements IBucket {
-
-	private static final Logger _logger = LoggerFactory.getLogger(MemoryBucket.class);
 
 	private static final class StoredObject {
 		private final Optional<String> _versionId;
