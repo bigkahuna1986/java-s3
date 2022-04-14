@@ -244,6 +244,12 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		final IBucket srcBucket = bucket(srcName);
 		final IBucket dstBucket = bucket(dstName);
 
+		if (!ctx.owner().getId().equals(srcBucket.owner().getId()))
+			throw new RequestFailedException();
+		
+		if (!ctx.owner().getId().equals(dstBucket.owner().getId()))
+			throw new RequestFailedException();
+
 		final GetObjectResult data = srcBucket.getObject(srcKey, Optional.empty());
 		dstBucket.putObject(dstKey, Optional.empty(), Optional.of(data.getContentType()),
 				copyMetadata ? data.getMetadata() : newMetadata, data.getData());
