@@ -1,12 +1,47 @@
 Java S3 Server/API
+====
 
-The goal of this project is to provide a more modular S3 api for java applications.
+The S3 server API is compiled using Java 11
 
-S3 objects/xml structures are stored in the s3-model sub project, the jersey API is in server-api. 
-Any application can implement the S3DataStore and S3AuthStore interfaces and attach via ApiPoint. 
-The rest can be started as a jetty/jersey server to handle any requests.
+## The problem
 
-If you're interested in a plain S3 backend for testing, you may investigate LocalStack. This
-project focuses on allowing devs to create custom backends and specific handling, allowing them
-to create custom unit tests.
+There are a number of Java S3 server implementations but no API that is ready for a custom implementation.
 
+## The solution
+
+This project has the goal of creating a simple to use API for developers creating custom backends that is also relatively stateless.
+No code is executing past the life of the web request.
+S3 objects/xml are modeled in the s3-model project. The actual server API is in server-api. 
+
+
+To use this framework you need to implement 2 different interfaces:
+
+```java
+net.jolivier.s3api.S3DataStore
+net.jolivier.s3api.S3AuthStore
+```
+
+provided by the s3-model project.
+Example
+
+```java
+class MyDataStore implements S3DataStore {
+   ... implemented methods ...
+}
+```
+
+And plugin your implementation to 
+
+```java
+net.jolivier.s3api.http.ApiPoint
+```
+
+before starting the server. Examples of how to bind the s3 server are in the launch project.
+
+## Gradle/Maven
+Currently these are not distributed through Maven Central, however I have my keys and group name setup. Once the project has reached a mature level for me, I will push them.
+
+
+## Other Considerations
+
+All requests are handled by Jersey, but you shouldn't need a familiarity with it to create the implementation.
