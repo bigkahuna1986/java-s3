@@ -12,28 +12,16 @@ import net.jolivier.s3api.http.S3Buckets;
 import net.jolivier.s3api.http.S3Objects;
 import net.jolivier.s3api.http.SignatureFilter;
 import net.jolivier.s3api.http.filter.RangeResponseFilter;
-import net.jolivier.s3api.impl.exception.ConflictExceptionMapper;
-import net.jolivier.s3api.impl.exception.InternalErrorExceptionMapper;
-import net.jolivier.s3api.impl.exception.InvalidAuthExceptionMapper;
-import net.jolivier.s3api.impl.exception.NoSuchBucketExceptionMapper;
 import net.jolivier.s3api.impl.exception.NoSuchKeyExceptionMapper;
-import net.jolivier.s3api.impl.exception.NotImplementedExceptionMapper;
-import net.jolivier.s3api.impl.exception.PreconditionFailedExceptionMapper;
-import net.jolivier.s3api.impl.exception.RequestFailedExceptionMapper;
+import net.jolivier.s3api.impl.exception.S3ExceptionMapper;
 
 public class S3Server {
 
 	public static Server createServer(URI bindUri) {
 		final ResourceConfig config = new ResourceConfig();
 
+		config.register(S3ExceptionMapper.class);
 		config.register(NoSuchKeyExceptionMapper.class);
-		config.register(NoSuchBucketExceptionMapper.class);
-		config.register(RequestFailedExceptionMapper.class);
-		config.register(InvalidAuthExceptionMapper.class);
-		config.register(InternalErrorExceptionMapper.class);
-		config.register(ConflictExceptionMapper.class);
-		config.register(NotImplementedExceptionMapper.class);
-		config.register(PreconditionFailedExceptionMapper.class);
 
 		config.register(PathMatchingFilter.class);
 		config.register(SignatureFilter.class);

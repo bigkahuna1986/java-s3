@@ -23,10 +23,10 @@ import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 
-import net.jolivier.s3api.InternalErrorException;
-import net.jolivier.s3api.NoSuchKeyException;
-import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.S3Context;
+import net.jolivier.s3api.exception.InternalErrorException;
+import net.jolivier.s3api.exception.NoSuchKeyException;
+import net.jolivier.s3api.exception.RequestFailedException;
 import net.jolivier.s3api.model.DeleteError;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
@@ -141,14 +141,14 @@ public class MemoryBucket implements IBucket {
 	}
 
 	@Override
-	public VersioningConfiguration getBucketVersioning() {
+	public VersioningConfiguration getBucketVersioning(S3Context ctx) {
 		return _versioning.copy();
 	}
 
 	@Override
-	public boolean putBucketVersioning(VersioningConfiguration config) {
+	public boolean putBucketVersioning(S3Context ctx, VersioningConfiguration config) {
 		if (_versioning.isDisabled())
-			throw new RequestFailedException("Cannot change versioning from disabled");
+			throw RequestFailedException.invalidBucketState(ctx);
 
 		_versioning = config;
 
@@ -161,25 +161,25 @@ public class MemoryBucket implements IBucket {
 	}
 
 	@Override
-	public PublicAccessBlockConfiguration getPublicAccessBlock() {
+	public PublicAccessBlockConfiguration getPublicAccessBlock(S3Context ctx) {
 		return _accessPolicy;
 	}
 
 	@Override
-	public boolean putPublicAccessBlock(PublicAccessBlockConfiguration config) {
+	public boolean putPublicAccessBlock(S3Context ctx, PublicAccessBlockConfiguration config) {
 		_accessPolicy = config;
 		return true;
 	}
 
 	@Override
-	public boolean deletePublicAccessBlock() {
+	public boolean deletePublicAccessBlock(S3Context ctx) {
 		_accessPolicy = PublicAccessBlockConfiguration.ALL_RESTRICTED;
 
 		return false;
 	}
 
 	@Override
-	public GetObjectResult getObject(String key, Optional<String> versionId) {
+	public GetObjectResult getObject(S3Context ctx, String key, Optional<String> versionId) {
 		List<StoredObject> stored = _objects.get(key);
 		if (stored != null && !stored.isEmpty()) {
 			StoredObject o = stored.get(stored.size() - 1);
@@ -188,7 +188,7 @@ public class MemoryBucket implements IBucket {
 				o = stored.stream().filter(x -> x._versionId.isPresent() && x._versionId.get().equals(versionId.get()))
 						.findFirst().orElse(o);
 				if (o._deleted)
-					throw new NoSuchKeyException(true);
+					throw new NoSuchKeyException(ctx, key, true);
 
 			}
 
@@ -196,11 +196,11 @@ public class MemoryBucket implements IBucket {
 					new ByteArrayInputStream(o.data()));
 		}
 
-		throw new NoSuchKeyException(false);
+		throw new NoSuchKeyException(ctx, key, false);
 	}
 
 	@Override
-	public HeadObjectResult headObject(String key, Optional<String> versionId) {
+	public HeadObjectResult headObject(S3Context ctx, String key, Optional<String> versionId) {
 		List<StoredObject> stored = _objects.get(key);
 		if (stored != null) {
 			StoredObject o = stored.get(stored.size() - 1);
@@ -209,16 +209,16 @@ public class MemoryBucket implements IBucket {
 				o = stored.stream().filter(x -> x._versionId.isPresent() && x._versionId.get().equals(versionId.get()))
 						.findFirst().orElse(o);
 				if (o._deleted)
-					throw new NoSuchKeyException(true);
+					throw new NoSuchKeyException(ctx, key, true);
 			}
 			return new HeadObjectResult(o.contentType(), o.etag(), o.modified(), o.getMetadata());
 		}
 
-		throw new NoSuchKeyException(false);
+		throw new NoSuchKeyException(ctx, key, false);
 	}
 
 	@Override
-	public boolean deleteObject(String key, Optional<String> versionId) {
+	public boolean deleteObject(S3Context ctx, String key, Optional<String> versionId) {
 		List<StoredObject> list = _objects.get(key);
 		if (list != null) {
 			if (versionId.isPresent()) {
@@ -241,12 +241,12 @@ public class MemoryBucket implements IBucket {
 	}
 
 	@Override
-	public DeleteResult deleteObjects(DeleteObjectsRequest request) {
+	public DeleteResult deleteObjects(S3Context ctx, DeleteObjectsRequest request) {
 		List<Deleted> deleted = new LinkedList<>();
 		List<DeleteError> errors = new LinkedList<>();
 
 		for (ObjectIdentifier oi : request.getObjects()) {
-			boolean result = deleteObject(oi.getKey(),
+			boolean result = deleteObject(ctx, oi.getKey(),
 					Strings.isNullOrEmpty(oi.getVersionId()) ? Optional.empty() : Optional.of(oi.getVersionId()));
 			if (result)
 				deleted.add(new Deleted(oi.getKey()));
@@ -258,7 +258,7 @@ public class MemoryBucket implements IBucket {
 	}
 
 	@Override
-	public PutObjectResult putObject(String key, Optional<String> inputMd5, Optional<String> contentType,
+	public PutObjectResult putObject(S3Context ctx, String key, Optional<String> inputMd5, Optional<String> contentType,
 			Map<String, String> metadata, InputStream data) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
@@ -279,12 +279,12 @@ public class MemoryBucket implements IBucket {
 
 			return new PutObjectResult(meta.etag(), Optional.empty());
 		} catch (IOException e) {
-			throw new InternalErrorException(e);
+			throw InternalErrorException.internalError(ctx, key, e.getLocalizedMessage());
 		}
 	}
 
 	@Override
-	public ListBucketResult listObjects(Optional<String> delimiter, Optional<String> encodingType,
+	public ListBucketResult listObjects(S3Context ctx, Optional<String> delimiter, Optional<String> encodingType,
 			Optional<String> marker, int maxKeys, Optional<String> prefix) {
 		final List<String> keys = new ArrayList<>(prefix.isPresent()
 				? _objects.keySet().stream().filter(k -> k.startsWith(prefix.get())).collect(Collectors.toList())
@@ -307,7 +307,7 @@ public class MemoryBucket implements IBucket {
 		final int endIndex = Math.min(startIndex + maxKeys, keys.size());
 
 		if (startIndex == endIndex)
-			throw new RequestFailedException("Invalid key marker " + marker.orElse("NA"));
+			throw RequestFailedException.invalidArgument(ctx, "Invalid key marker " + marker.orElse("NA"));
 
 		boolean truncated = false;
 
@@ -338,8 +338,9 @@ public class MemoryBucket implements IBucket {
 	}
 
 	@Override
-	public ListVersionsResult listObjectVersions(Optional<String> delimiter, Optional<String> encodingType,
-			Optional<String> marker, Optional<String> versionIdMarker, int maxKeys, Optional<String> prefix) {
+	public ListVersionsResult listObjectVersions(S3Context ctx, Optional<String> delimiter,
+			Optional<String> encodingType, Optional<String> marker, Optional<String> versionIdMarker, int maxKeys,
+			Optional<String> prefix) {
 
 		final List<String> keys = new ArrayList<>(prefix.isPresent()
 				? _objects.keySet().stream().filter(k -> k.startsWith(prefix.get())).collect(Collectors.toList())

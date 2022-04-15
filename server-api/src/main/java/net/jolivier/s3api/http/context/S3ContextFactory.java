@@ -5,6 +5,7 @@ import org.glassfish.hk2.api.Factory;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import net.jolivier.s3api.auth.S3Context;
+import net.jolivier.s3api.http.SignatureFilter;
 
 public class S3ContextFactory implements Factory<S3Context> {
 
@@ -17,7 +18,7 @@ public class S3ContextFactory implements Factory<S3Context> {
 
 	@Override
 	public S3Context provide() {
-		return (S3Context) context.getProperty("s3ctx");
+		return (S3Context) context.getProperty(SignatureFilter.CTX_KEY);
 	}
 
 	@Override

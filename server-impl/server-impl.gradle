@@ -1,6 +1,6 @@
 
 ext {
-        jettyVersion= '11.0.8'
+        jettyVersion= '11.0.9'
         jerseyVersion = '3.0.4'
 }
 

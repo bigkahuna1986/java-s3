@@ -4,12 +4,14 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.jolivier.s3api.RequestFailedException;
+import net.jolivier.s3api.exception.InvalidAuthException;
 
 /**
  * Parsing utility for the AWSV4 signature.
  * 
- * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html">AWS Signature Reference</a>
+ * @see <a href=
+ *      "https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html">AWS
+ *      Signature Reference</a>
  * 
  * @author josho
  *
@@ -35,7 +37,7 @@ public class AwsSigV4 {
 			_headers = matcher.group(4);
 			_signature = matcher.group(5);
 		} else
-			throw new RequestFailedException("Invalid authorization header for V4!: " + authString);
+			throw InvalidAuthException.malformedSignature();
 
 	}
 

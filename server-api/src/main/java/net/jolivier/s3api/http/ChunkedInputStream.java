@@ -13,7 +13,7 @@ import com.google.common.primitives.Ints;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
-import net.jolivier.s3api.RequestFailedException;
+import net.jolivier.s3api.exception.InternalErrorException;
 
 public class ChunkedInputStream extends InputStream {
 
@@ -74,7 +74,7 @@ public class ChunkedInputStream extends InputStream {
 			_byteBuf.readBytes(result);
 			return result;
 		} catch (BufferOverflowException e) {
-			throw new RequestFailedException("Invalid chunk length");
+			throw InternalErrorException.internalError("Invalid chunk length");
 		}
 	}
 

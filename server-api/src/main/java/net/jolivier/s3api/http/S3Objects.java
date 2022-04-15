@@ -36,13 +36,14 @@ import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.AwsHeaders;
 import net.jolivier.s3api.BucketOptional;
-import net.jolivier.s3api.InvalidAuthException;
-import net.jolivier.s3api.NoSuchBucketException;
-import net.jolivier.s3api.NoSuchKeyException;
-import net.jolivier.s3api.NotImplementedException;
-import net.jolivier.s3api.PreconditionFailedException;
-import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.S3Context;
+import net.jolivier.s3api.exception.InternalErrorException;
+import net.jolivier.s3api.exception.InvalidAuthException;
+import net.jolivier.s3api.exception.NoSuchBucketException;
+import net.jolivier.s3api.exception.NoSuchKeyException;
+import net.jolivier.s3api.exception.NotImplementedException;
+import net.jolivier.s3api.exception.PreconditionFailedException;
+import net.jolivier.s3api.exception.RequestFailedException;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
@@ -69,15 +70,15 @@ public class S3Objects {
 		MultivaluedMap<String, String> query = request.getUriInfo().getQueryParameters();
 
 		if (query.containsKey("legal-hold")) {
-			throw new NotImplementedException("Object hold operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Object hold operations are not implemented");
 		}
 
 		if (query.containsKey("retention")) {
-			throw new NotImplementedException("Object retention operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Object retention operations are not implemented");
 		}
 
 		if (query.containsKey("object-lock")) {
-			throw new NotImplementedException("Object lock operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Object lock operations are not implemented");
 		}
 
 		final GetObjectResult result = ApiPoint.data().getObject(ctx, ctx.bucket(), key,
@@ -88,7 +89,7 @@ public class S3Objects {
 		if (conditionalResponse != null) {
 			final Response res = conditionalResponse.build();
 			if (res.getStatus() == Status.PRECONDITION_FAILED.getStatusCode())
-				throw new PreconditionFailedException(key);
+				throw PreconditionFailedException.preconditionFailed(ctx, key);
 
 			return res;
 		}
@@ -135,7 +136,7 @@ public class S3Objects {
 	public DeleteResult deleteObjects(@Context S3Context ctx, @Context ContainerRequest request) {
 
 		if (!request.getUriInfo().getQueryParameters().containsKey("delete"))
-			throw new RequestFailedException("delete required");
+			throw RequestFailedException.invalidRequest(ctx, "delete required");
 
 		final DeleteObjectsRequest req = RequestUtils.readJaxbEntity(DeleteObjectsRequest.class,
 				request.getEntityStream());
@@ -168,15 +169,15 @@ public class S3Objects {
 		MultivaluedMap<String, String> query = request.getUriInfo().getQueryParameters();
 
 		if (query.containsKey("legal-hold")) {
-			throw new NotImplementedException("Object hold operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Object hold operations are not implemented");
 		}
 
 		if (query.containsKey("retention")) {
-			throw new NotImplementedException("Object retention operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Object retention operations are not implemented");
 		}
 
 		if (query.containsKey("object-lock")) {
-			throw new NotImplementedException("Object lock operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Object lock operations are not implemented");
 		}
 
 		// copyObject
@@ -190,7 +191,7 @@ public class S3Objects {
 
 			final Owner srcOwner = ApiPoint.auth().findOwner(srcBucket);
 			if (!srcOwner.getId().equals(ctx.owner().getId()))
-				throw new InvalidAuthException("Wrong owner");
+				throw InvalidAuthException.incorrectOwner();
 
 			final String srcKey = sourceKey.substring(idx + 1);
 			final boolean copyMetadata = "copy".equals(request.getHeaderString(AwsHeaders.X_AMZ_METADATA_DIRECTIVE));
@@ -214,7 +215,7 @@ public class S3Objects {
 
 				return res.build();
 			} catch (IOException e) {
-				throw new RequestFailedException(e);
+				throw InternalErrorException.internalError(ctx, key, e.getLocalizedMessage());
 			}
 		}
 	}
@@ -240,7 +241,7 @@ public class S3Objects {
 			@Context UriInfo uriInfo) {
 
 		if (maxKeys > 1000 || maxKeys < 1)
-			throw new RequestFailedException("Invalid maxKeys");
+			throw RequestFailedException.invalidRequest(ctx, "Invalid maxKeys");
 
 		// List Buckets
 		if (ctx.optBucket().isEmpty()) {
@@ -252,6 +253,10 @@ public class S3Objects {
 		final MultivaluedMap<String, String> query = uriInfo.getQueryParameters();
 
 		if (!query.isEmpty()) {
+
+			if (query.containsKey("object-lock"))
+				throw NotImplementedException.notImplemented(ctx, "object lock is not implemented");
+
 			if (query.containsKey("versioning"))
 				return Response.ok(ApiPoint.data().getBucketVersioning(ctx, ctx.bucket())).build();
 

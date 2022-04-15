@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import com.google.common.io.BaseEncoding;
 
-import net.jolivier.s3api.RequestFailedException;
+import net.jolivier.s3api.exception.RequestFailedException;
 import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.User;
 
@@ -61,7 +61,7 @@ public class S3Context {
 	}
 
 	public String bucket() {
-		return _bucket.orElseThrow(() -> new RequestFailedException("no bucket"));
+		return _bucket.orElseThrow(() -> RequestFailedException.invalidRequest(this, "no bucket"));
 	}
 
 	public Owner owner() {

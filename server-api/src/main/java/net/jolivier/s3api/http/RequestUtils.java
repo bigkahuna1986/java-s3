@@ -19,8 +19,10 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import net.jolivier.s3api.AwsHeaders;
+import net.jolivier.s3api.exception.InvalidAuthException;
 import uk.co.lucasweb.aws.v4.signer.HttpRequest;
 import uk.co.lucasweb.aws.v4.signer.Signer;
+import uk.co.lucasweb.aws.v4.signer.SigningException;
 import uk.co.lucasweb.aws.v4.signer.Signer.Builder;
 import uk.co.lucasweb.aws.v4.signer.credentials.AwsCredentials;
 
@@ -86,21 +88,25 @@ public enum RequestUtils {
 	public static final String calculateV4Sig(ContainerRequestContext request, URI requestUri, String signedHeaders,
 			String accessKey, String secretKey, String region) {
 
-		Builder signer = Signer.builder();
+		try {
+			Builder signer = Signer.builder();
 
-		signer.awsCredentials(new AwsCredentials(accessKey, secretKey)).region(region);
+			signer.awsCredentials(new AwsCredentials(accessKey, secretKey)).region(region);
 
-		final Map<String, String> map = request.getHeaders().entrySet().stream()
-				.collect(Collectors.toMap(e -> e.getKey().toLowerCase(), e -> e.getValue().get(0).trim()));
+			final Map<String, String> map = request.getHeaders().entrySet().stream()
+					.collect(Collectors.toMap(e -> e.getKey().toLowerCase(), e -> e.getValue().get(0).trim()));
 
-		for (String name : signedHeaders.split(";")) {
-			signer.header(name.trim(), map.get(name));
+			for (String name : signedHeaders.split(";")) {
+				signer.header(name.trim(), map.get(name));
+			}
+
+			final String signature = signer.buildS3(new HttpRequest(request.getMethod(), requestUri),
+					request.getHeaderString("x-amz-content-sha256")).getSignature();
+
+			return signature;
+		} catch (SigningException e) {
+			throw InvalidAuthException.malformedSignature();
 		}
-
-		final String signature = signer.buildS3(new HttpRequest(request.getMethod(), requestUri),
-				request.getHeaderString("x-amz-content-sha256")).getSignature();
-
-		return signature;
 	}
 
 	public static final Map<String, String> metadataHeaders(ContainerRequest req) {

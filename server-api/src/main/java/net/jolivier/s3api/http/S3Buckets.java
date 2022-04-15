@@ -15,10 +15,10 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.BucketOptional;
-import net.jolivier.s3api.NoSuchBucketException;
-import net.jolivier.s3api.NotImplementedException;
-import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.auth.S3Context;
+import net.jolivier.s3api.exception.NoSuchBucketException;
+import net.jolivier.s3api.exception.NotImplementedException;
+import net.jolivier.s3api.exception.RequestFailedException;
 import net.jolivier.s3api.model.CreateBucketConfiguration;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.VersioningConfiguration;
@@ -64,7 +64,7 @@ public class S3Buckets {
 					req.getEntityStream());
 
 			if (!ApiPoint.data().putBucketVersioning(ctx, ctx.bucket(), config))
-				throw new RequestFailedException();
+				throw RequestFailedException.invalidBucketState(ctx);
 
 			return Response.ok().build();
 		}
@@ -74,25 +74,25 @@ public class S3Buckets {
 					req.getEntityStream());
 
 			if (!ApiPoint.data().putPublicAccessBlock(ctx, ctx.bucket(), config))
-				throw new RequestFailedException();
+				throw RequestFailedException.invalidArgument(ctx, "Unable to put bucket PublicAccessBlock");
 
 			return Response.ok().build();
 		}
 
 		if (query.containsKey("lifecycle") || query.containsKey("object-lock")) {
-			throw new NotImplementedException("Lifecycle operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Lifecycle operations are not implemented");
 		}
 
 		if (query.containsKey("logging")) {
-			throw new NotImplementedException("Bucket logging operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Bucket logging operations are not implemented");
 		}
 
 		if (query.containsKey("policy")) {
-			throw new NotImplementedException("Bucket policy operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Bucket policy operations are not implemented");
 		}
 
 		if (query.containsKey("encryption")) {
-			throw new NotImplementedException("Bucket encryption operations are not implemented");
+			throw NotImplementedException.notImplemented(ctx, "Bucket encryption operations are not implemented");
 		}
 
 		String location = "us-east-1";
@@ -102,7 +102,7 @@ public class S3Buckets {
 			location = config.getLocation();
 		}
 		if (!ApiPoint.data().createBucket(ctx, ctx.bucket(), location))
-			throw new RequestFailedException();
+			throw RequestFailedException.invalidArgument(ctx, "Unable to create bucket");
 
 		return Response.ok().build();
 	}
@@ -119,13 +119,13 @@ public class S3Buckets {
 
 		if (uriInfo.getQueryParameters().containsKey("publicAccessBlock")) {
 			if (!ApiPoint.data().deletePublicAccessBlock(ctx, ctx.bucket()))
-				throw new RequestFailedException();
+				throw RequestFailedException.invalidArgument(ctx, "Unable to delete bucket PublicAccessBlock");
 
 			return Response.noContent().build();
 		}
 
 		if (!ApiPoint.data().deleteBucket(ctx, ctx.bucket()))
-			throw new RequestFailedException();
+			throw RequestFailedException.invalidArgument(ctx, "Unable to delete bucket");
 
 		return Response.noContent().build();
 	}

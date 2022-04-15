@@ -9,13 +9,13 @@ import java.util.stream.Collectors;
 
 import com.google.common.io.BaseEncoding;
 
-import net.jolivier.s3api.ConflictException;
-import net.jolivier.s3api.InvalidAuthException;
-import net.jolivier.s3api.NoSuchBucketException;
-import net.jolivier.s3api.RequestFailedException;
 import net.jolivier.s3api.S3AuthStore;
 import net.jolivier.s3api.S3DataStore;
 import net.jolivier.s3api.auth.S3Context;
+import net.jolivier.s3api.exception.ConflictException;
+import net.jolivier.s3api.exception.InvalidAuthException;
+import net.jolivier.s3api.exception.NoSuchBucketException;
+import net.jolivier.s3api.exception.RequestFailedException;
 import net.jolivier.s3api.model.Bucket;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
@@ -74,10 +74,10 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	private static final Map<String, IBucket> BUCKETS = new ConcurrentHashMap<String, IBucket>();
 
-	private static final IBucket bucket(String name) {
+	private static final IBucket bucket(S3Context ctx, String name) {
 		IBucket bucket = BUCKETS.get(name);
 		if (bucket == null)
-			throw new NoSuchBucketException(name);
+			throw NoSuchBucketException.noSuchBucket(ctx);
 
 		return bucket;
 	}
@@ -89,12 +89,12 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	@Override
 	public VersioningConfiguration getBucketVersioning(S3Context ctx, String bucket) {
-		return bucket(bucket).getBucketVersioning();
+		return bucket(ctx, bucket).getBucketVersioning(ctx);
 	}
 
 	@Override
 	public boolean putBucketVersioning(S3Context ctx, String bucket, VersioningConfiguration config) {
-		return bucket(bucket).putBucketVersioning(config);
+		return bucket(ctx, bucket).putBucketVersioning(ctx, config);
 	}
 
 	@Override
@@ -103,7 +103,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		if (user != null)
 			return user;
 
-		throw new InvalidAuthException("No such access key " + accessKeyId);
+		throw InvalidAuthException.noSuchAccessKey();
 	}
 
 	@Override
@@ -113,7 +113,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 			return ob.owner();
 		}
 
-		throw new NoSuchBucketException(bucket);
+		throw NoSuchBucketException.noSuchBucket(bucket);
 	}
 
 	@Override
@@ -149,7 +149,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 			if (owner != null)
 				return owner;
 		}
-		throw new RequestFailedException("No owner for " + user.accessKeyId());
+		throw RequestFailedException.invalidRequest("Unknown", "No owner for the provided user");
 	}
 
 	@Override
@@ -166,7 +166,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	public boolean deleteBucket(S3Context ctx, String bucket) {
 		IBucket iBucket = BUCKETS.get(bucket);
 		if (!iBucket.isEmpty())
-			throw new ConflictException(bucket);
+			throw ConflictException.bucketNotEmpty(ctx);
 
 		return BUCKETS.remove(bucket) != null;
 	}
@@ -190,68 +190,68 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	@Override
 	public PublicAccessBlockConfiguration getPublicAccessBlock(S3Context ctx, String bucket) {
-		return bucket(bucket).getPublicAccessBlock();
+		return bucket(ctx, bucket).getPublicAccessBlock(ctx);
 	}
 
 	@Override
 	public boolean putPublicAccessBlock(S3Context ctx, String bucket, PublicAccessBlockConfiguration config) {
-		return bucket(bucket).putPublicAccessBlock(config);
+		return bucket(ctx, bucket).putPublicAccessBlock(ctx, config);
 	}
 
 	@Override
 	public boolean deletePublicAccessBlock(S3Context ctx, String bucket) {
-		return bucket(bucket).deletePublicAccessBlock();
+		return bucket(ctx, bucket).deletePublicAccessBlock(ctx);
 	}
 
 	@Override
 	public GetObjectResult getObject(S3Context ctx, String bucket, String key, Optional<String> versionId) {
-		return bucket(bucket).getObject(key, versionId);
+		return bucket(ctx, bucket).getObject(ctx, key, versionId);
 	}
 
 	@Override
 	public HeadObjectResult headObject(S3Context ctx, String bucket, String key, Optional<String> versionId) {
-		return bucket(bucket).headObject(key, versionId);
+		return bucket(ctx, bucket).headObject(ctx, key, versionId);
 	}
 
 	@Override
 	public boolean deleteObject(S3Context ctx, String bucket, String key, Optional<String> versionId) {
-		return bucket(bucket).deleteObject(key, versionId);
+		return bucket(ctx, bucket).deleteObject(ctx, key, versionId);
 	}
 
 	@Override
 	public DeleteResult deleteObjects(S3Context ctx, String bucket, DeleteObjectsRequest request) {
-		return bucket(bucket).deleteObjects(request);
+		return bucket(ctx, bucket).deleteObjects(ctx, request);
 	}
 
 	@Override
 	public PutObjectResult putObject(S3Context ctx, String bucket, String key, Optional<String> inputMd5,
 			Optional<String> contentType, Map<String, String> metadata, InputStream data) {
-		return bucket(bucket).putObject(key, inputMd5, contentType, metadata, data);
+		return bucket(ctx, bucket).putObject(ctx, key, inputMd5, contentType, metadata, data);
 	}
 
 	@Override
 	public CopyObjectResult copyObject(S3Context ctx, String srcName, String srcKey, String dstName, String dstKey,
 			boolean copyMetadata, Map<String, String> newMetadata) {
 		if (!BUCKETS.containsKey(srcName))
-			throw new NoSuchBucketException(srcName);
+			throw NoSuchBucketException.noSuchBucket(ctx);
 
 		if (!BUCKETS.containsKey(dstName))
-			throw new NoSuchBucketException(dstName);
+			throw NoSuchBucketException.noSuchBucket(ctx);
 
 		if (srcName.equals(dstName) && srcKey.equals(dstKey))
-			throw new RequestFailedException(dstKey);
+			throw RequestFailedException.invalidArgument(ctx, dstKey);
 
-		final IBucket srcBucket = bucket(srcName);
-		final IBucket dstBucket = bucket(dstName);
+		final IBucket srcBucket = bucket(ctx, srcName);
+		final IBucket dstBucket = bucket(ctx, dstName);
 
 		if (!ctx.owner().getId().equals(srcBucket.owner().getId()))
-			throw new RequestFailedException();
-		
-		if (!ctx.owner().getId().equals(dstBucket.owner().getId()))
-			throw new RequestFailedException();
+			throw InvalidAuthException.incorrectOwner();
 
-		final GetObjectResult data = srcBucket.getObject(srcKey, Optional.empty());
-		dstBucket.putObject(dstKey, Optional.empty(), Optional.of(data.getContentType()),
+		if (!ctx.owner().getId().equals(dstBucket.owner().getId()))
+			throw InvalidAuthException.incorrectOwner();
+
+		final GetObjectResult data = srcBucket.getObject(ctx, srcKey, Optional.empty());
+		dstBucket.putObject(ctx, dstKey, Optional.empty(), Optional.of(data.getContentType()),
 				copyMetadata ? data.getMetadata() : newMetadata, data.getData());
 
 		return new CopyObjectResult(data.getEtag(), data.getModified());
@@ -260,14 +260,15 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	@Override
 	public ListBucketResult listObjects(S3Context ctx, String bucket, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, int maxKeys, Optional<String> prefix) {
-		return bucket(bucket).listObjects(delimiter, encodingType, marker, maxKeys, prefix);
+		return bucket(ctx, bucket).listObjects(ctx, delimiter, encodingType, marker, maxKeys, prefix);
 	}
 
 	@Override
 	public ListVersionsResult listObjectVersions(S3Context ctx, String bucket, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, Optional<String> versionIdMarker, int maxKeys,
 			Optional<String> prefix) {
-		return bucket(bucket).listObjectVersions(delimiter, encodingType, marker, versionIdMarker, maxKeys, prefix);
+		return bucket(ctx, bucket).listObjectVersions(ctx, delimiter, encodingType, marker, versionIdMarker, maxKeys,
+				prefix);
 	}
 
 }
