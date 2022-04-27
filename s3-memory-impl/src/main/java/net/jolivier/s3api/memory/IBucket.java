@@ -49,8 +49,8 @@ public interface IBucket {
 
 	public DeleteResult deleteObjects(S3Context ctx, DeleteObjectsRequest request);
 
-	public PutObjectResult putObject(S3Context ctx, String key, Optional<byte[]> inputMd5, Optional<String> contentType,
-			Map<String, String> metadata, InputStream data);
+	public PutObjectResult putObject(S3Context ctx, String key, Optional<byte[]> inputMd5, int expectedLength,
+			Optional<String> contentType, Map<String, String> metadata, InputStream data);
 
 	public ListBucketResult listObjects(S3Context ctx, Optional<String> delimiter, Optional<String> encodingType,
 			Optional<String> marker, int maxKeys, Optional<String> prefix);

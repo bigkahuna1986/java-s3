@@ -230,8 +230,8 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 
 	@Override
 	public PutObjectResult putObject(S3Context ctx, String bucket, String key, Optional<byte[]> inputMd5,
-			Optional<String> contentType, Map<String, String> metadata, InputStream data) {
-		return bucket(ctx, bucket).putObject(ctx, key, inputMd5, contentType, metadata, data);
+			int expectedLength, Optional<String> contentType, Map<String, String> metadata, InputStream data) {
+		return bucket(ctx, bucket).putObject(ctx, key, inputMd5, expectedLength, contentType, metadata, data);
 	}
 
 	@Override
@@ -256,7 +256,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 			throw InvalidAuthException.incorrectOwner();
 
 		final GetObjectResult data = srcBucket.getObject(ctx, srcKey, Optional.empty());
-		dstBucket.putObject(ctx, dstKey, Optional.empty(), Optional.of(data.getContentType()),
+		dstBucket.putObject(ctx, dstKey, Optional.empty(), data.length(), Optional.of(data.getContentType()),
 				copyMetadata ? data.getMetadata() : newMetadata, data.getData());
 
 		return new CopyObjectResult(data.getEtag(), data.getModified());

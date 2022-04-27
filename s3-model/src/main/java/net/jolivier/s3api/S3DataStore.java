@@ -69,7 +69,7 @@ public interface S3DataStore {
 	public DeleteResult deleteObjects(S3Context ctx, String bucket, DeleteObjectsRequest request);
 
 	public PutObjectResult putObject(S3Context ctx, String bucket, String key, Optional<byte[]> inputMd5,
-			Optional<String> contentType, Map<String, String> metadata, InputStream data);
+			int expectedLength, Optional<String> contentType, Map<String, String> metadata, InputStream data);
 
 	public CopyObjectResult copyObject(S3Context ctx, String srcBucket, String srcKey, String dstBucket, String dstKey,
 			boolean copyMetadata, Map<String, String> newMetadata);

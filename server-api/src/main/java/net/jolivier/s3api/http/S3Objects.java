@@ -220,7 +220,7 @@ public class S3Objects {
 					throw RequestFailedException.invalidDigest(key);
 
 				final PutObjectResult result = ApiPoint.data().putObject(ctx, ctx.bucket(), key, md5,
-						Optional.ofNullable(contentType), metadataHeaders(request), in);
+						request.getLength(), Optional.ofNullable(contentType), metadataHeaders(request), in);
 
 				// Send new object version back to client.
 				ResponseBuilder res = Response.ok().tag(result.etag());

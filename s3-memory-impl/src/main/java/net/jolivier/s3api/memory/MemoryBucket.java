@@ -198,7 +198,7 @@ public class MemoryBucket implements IBucket {
 
 			}
 
-			return new GetObjectResult(o.contentType(), o.etag(), o.modified(), o.getMetadata(),
+			return new GetObjectResult(o.contentType(), o.etag(), o.modified(), o.getMetadata(), o.data().length,
 					new ByteArrayInputStream(o.data()));
 		}
 
@@ -264,12 +264,15 @@ public class MemoryBucket implements IBucket {
 	}
 
 	@Override
-	public PutObjectResult putObject(S3Context ctx, String key, Optional<byte[]> inputMd5, Optional<String> contentType,
-			Map<String, String> metadata, InputStream data) {
+	public PutObjectResult putObject(S3Context ctx, String key, Optional<byte[]> inputMd5, int expectedLength,
+			Optional<String> contentType, Map<String, String> metadata, InputStream data) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			data.transferTo(baos);
 			final byte[] bytes = baos.toByteArray();
+
+			if (bytes.length != expectedLength) {
+			}
 
 			Optional<String> versionId = Optional.empty();
 
