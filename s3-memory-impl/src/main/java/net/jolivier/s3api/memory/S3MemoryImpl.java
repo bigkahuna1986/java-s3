@@ -172,6 +172,11 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
+	public boolean isBucketPublic(String bucket) {
+		return false;
+	}
+
+	@Override
 	public ListAllMyBucketsResult listBuckets(S3Context ctx) {
 		List<Bucket> buckets = BUCKETS.values().stream().filter(ob -> ob.owner().getId().equals(ctx.owner().getId()))
 				.map(b -> new Bucket(b.name(), b.created())).collect(Collectors.toList());
@@ -224,7 +229,7 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public PutObjectResult putObject(S3Context ctx, String bucket, String key, Optional<String> inputMd5,
+	public PutObjectResult putObject(S3Context ctx, String bucket, String key, Optional<byte[]> inputMd5,
 			Optional<String> contentType, Map<String, String> metadata, InputStream data) {
 		return bucket(ctx, bucket).putObject(ctx, key, inputMd5, contentType, metadata, data);
 	}

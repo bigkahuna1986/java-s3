@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -18,6 +19,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
@@ -44,6 +48,8 @@ import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
 public class MemoryBucket implements IBucket {
+
+	private static final Logger _logger = LoggerFactory.getLogger(MemoryBucket.class);
 
 	private static final class StoredObject {
 		private final Optional<String> _versionId;
@@ -258,7 +264,7 @@ public class MemoryBucket implements IBucket {
 	}
 
 	@Override
-	public PutObjectResult putObject(S3Context ctx, String key, Optional<String> inputMd5, Optional<String> contentType,
+	public PutObjectResult putObject(S3Context ctx, String key, Optional<byte[]> inputMd5, Optional<String> contentType,
 			Map<String, String> metadata, InputStream data) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
@@ -270,8 +276,13 @@ public class MemoryBucket implements IBucket {
 			if (_versioning.isEnabled())
 				versionId = Optional.of(S3Context.createVersionId());
 
-			String etag = inputMd5
-					.orElseGet(() -> BaseEncoding.base16().encode(Hashing.md5().hashBytes(bytes).asBytes()));
+			final byte[] calculatedMd5 = Hashing.md5().hashBytes(bytes).asBytes();
+			if (inputMd5.isPresent()) {
+				if (!Arrays.equals(calculatedMd5, inputMd5.get()))
+					throw RequestFailedException.badDigest(key);
+			}
+
+			final String etag = BaseEncoding.base16().encode(calculatedMd5);
 
 			final StoredObject meta = new StoredObject(versionId, false, bytes,
 					contentType.orElse("application/octet-stream"), etag, ZonedDateTime.now(), metadata);

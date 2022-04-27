@@ -2,17 +2,19 @@ package net.jolivier.s3api.http;
 
 import static java.util.Optional.ofNullable;
 import static net.jolivier.s3api.AwsHeaders.X_AMZ_COPY_SOURCE;
-import static net.jolivier.s3api.AwsHeaders.X_AMZ_VERSION_ID;
 import static net.jolivier.s3api.http.RequestUtils.metadataHeaders;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import org.glassfish.jersey.server.ContainerRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.DELETE;
@@ -56,6 +58,8 @@ import net.jolivier.s3api.model.PutObjectResult;
 
 @Path("/")
 public class S3Objects {
+
+	private static final Logger _logger = LoggerFactory.getLogger(S3Objects.class);
 
 	/**
 	 * Get an existing object.
@@ -205,13 +209,16 @@ public class S3Objects {
 		else {
 			try (InputStream in = isV4signed(request) ? new ChunkedInputStream(request.getEntityStream())
 					: request.getEntityStream()) {
+				final Optional<byte[]> md5 = Optional.ofNullable(inputMd5).map(Base64.getDecoder()::decode);
+				if (md5.isPresent() && md5.get().length != 32)
+					throw RequestFailedException.invalidDigest(key);
 
-				final PutObjectResult result = ApiPoint.data().putObject(ctx, ctx.bucket(), key,
-						Optional.ofNullable(inputMd5), Optional.ofNullable(contentType), metadataHeaders(request), in);
+				final PutObjectResult result = ApiPoint.data().putObject(ctx, ctx.bucket(), key, md5,
+						Optional.ofNullable(contentType), metadataHeaders(request), in);
 
 				// Send new object version back to client.
 				ResponseBuilder res = Response.ok().tag(result.etag());
-				result.versionId().ifPresent(v -> res.header(X_AMZ_VERSION_ID, v));
+				result.versionId().ifPresent(v -> res.header(AwsHeaders.X_AMZ_VERSION_ID, v));
 
 				return res.build();
 			} catch (IOException e) {

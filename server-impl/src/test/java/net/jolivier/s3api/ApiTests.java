@@ -22,6 +22,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.io.ByteStreams;
+
 import net.jolivier.s3api.http.ApiPoint;
 import net.jolivier.s3api.impl.RequestLogger;
 import net.jolivier.s3api.impl.S3Server;
@@ -130,9 +132,6 @@ public class ApiTests {
 					.build());
 		}
 
-		assertEquals("Buckets", s3.listBuckets().buckets().stream().map(Bucket::name).collect(Collectors.toList()),
-				List.of(bucket));
-
 		final String contents = "object contents!";
 		try {
 			s3.headObject(HeadObjectRequest.builder().bucket(bucket).key("key1").build());
@@ -151,7 +150,7 @@ public class ApiTests {
 		s3.copyObject(CopyObjectRequest.builder().sourceBucket(bucket).sourceKey("key1").destinationBucket(bucket)
 				.destinationKey("prefix/key2").build());
 
-		System.out.println(s3.listObjects(ListObjectsRequest.builder().bucket(bucket).maxKeys(2000).build()).contents()
+		System.out.println(s3.listObjects(ListObjectsRequest.builder().bucket(bucket).maxKeys(1000).build()).contents()
 				.stream().map(S3Object::key).collect(Collectors.toList()));
 
 		s3.deleteObjects(DeleteObjectsRequest.builder().bucket(bucket).delete(
@@ -168,8 +167,6 @@ public class ApiTests {
 				RequestBody.fromString(contents)).eTag());
 
 		s3.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key("key3").build());
-
-		s3.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build());
 	}
 
 	@Test()
@@ -255,7 +252,37 @@ public class ApiTests {
 		});
 
 		assertEquals("key ", 404, exception.statusCode());
+	}
 
+	@Test
+	public void invalidMd5() {
+		final S3ClientBuilder s3Builder = S3Client.builder()
+				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
+
+		s3Builder.region(Region.US_EAST_1).endpointOverride(ENDPOINT)
+				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+
+		final S3Client s3 = s3Builder.build();
+
+		final String bucket = randomBucket();
+
+		s3.createBucket(CreateBucketRequest.builder().bucket(bucket)
+
+				.createBucketConfiguration(CreateBucketConfiguration.builder().locationConstraint("us-west-2").build())
+
+				.build());
+
+		final String key = randomKey(false);
+		final byte[] data = new byte[512];
+		RANDOM.nextBytes(data);
+
+		S3Exception exception = assertThrows(S3Exception.class,
+				() -> s3.putObject(
+						PutObjectRequest.builder().bucket(bucket).key(key)
+								.contentMD5("z8Sk8obOIezuaKSfXrbR2jbYh5ojeeAJWBbxCGkHtxE=").build(),
+						RequestBody.fromBytes(data)));
+
+		assertEquals("invalidMd5 ", 400, exception.statusCode());
 	}
 
 	@Test
@@ -312,10 +339,10 @@ public class ApiTests {
 
 		for (String key : keys) {
 			final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			s3.getObject(GetObjectRequest.builder().bucket(bucket).key(key).build()).transferTo(baos);
+			ByteStreams.copy(s3.getObject(GetObjectRequest.builder().bucket(bucket).key(key).build()), baos);
 
 			final byte[] data = baos.toByteArray();
-			assertEquals("data size", dataLength, data.length);
+			assertEquals("data size " + key, dataLength, data.length);
 		}
 
 		final List<ObjectIdentifier> ids = new ArrayList<>();

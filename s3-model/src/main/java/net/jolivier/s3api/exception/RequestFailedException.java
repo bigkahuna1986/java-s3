@@ -31,6 +31,16 @@ public class RequestFailedException {
 		return new S3Exception(HttpURLConnection.HTTP_BAD_REQUEST, "InvalidRequest", resource, message);
 	}
 
+	public static S3Exception invalidDigest(String key) {
+		return new S3Exception(HttpURLConnection.HTTP_BAD_REQUEST, "InvalidDigest", key,
+				"The Content-MD5 or checksum value that you specified is not valid.");
+	}
+
+	public static S3Exception badDigest(String key) {
+		return new S3Exception(HttpURLConnection.HTTP_BAD_REQUEST, "BadDigest", key,
+				"The Content-MD5 or checksum value that you specified did not match what the server received.");
+	}
+
 	public static S3Exception invalidBucketName() {
 		return new S3Exception(HttpURLConnection.HTTP_BAD_REQUEST, "InvalidBucketName", "Unknown",
 				"The specified bucket is not valid.");

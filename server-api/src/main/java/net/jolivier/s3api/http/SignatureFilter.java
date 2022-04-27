@@ -17,7 +17,6 @@ import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.exception.InvalidAuthException;
 import net.jolivier.s3api.exception.NoSuchBucketException;
 import net.jolivier.s3api.exception.RequestFailedException;
-import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.User;
 
 /**
@@ -38,10 +37,31 @@ public class SignatureFilter implements ContainerRequestFilter {
 
 	@Override
 	public void filter(ContainerRequestContext ctx) {
+		final UriInfo uriInfo = ctx.getUriInfo();
+
 		final String requestId = S3Context.createRequestId();
 
-		PublicAccessBlockConfiguration accessPolicy = PublicAccessBlockConfiguration.ALL_RESTRICTED;
+		String authorization = ctx.getHeaderString("Authorization");
+		if (!Strings.isNullOrEmpty(authorization)) {
+			final AwsSigV4 sigv4 = new AwsSigV4(authorization);
+			final User user = ApiPoint.auth().user(sigv4.accessKeyId());
+
+			final URI requestUri = ctx.getPropertyNames().contains(ORIG_URI) ? (URI) ctx.getProperty(ORIG_URI)
+					: uriInfo.getRequestUri();
+
+			final String computedAuth = RequestUtils.calculateV4Sig(ctx, requestUri, sigv4.signedHeaders(),
+					sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
+
+			if (!authorization.equals(computedAuth)) {
+				throw InvalidAuthException.invalidAuth();
+			}
+
+			ctx.setProperty("sigv4", sigv4);
+		}
+
 		final String bucket = (String) ctx.getProperty("bucket");
+
+		boolean isPublic = false;
 
 		if (Strings.isNullOrEmpty(bucket) && !Strings.isNullOrEmpty(ctx.getUriInfo().getPath()))
 			throw RequestFailedException.invalidRequest("NoBucket", "No bucket provided");
@@ -55,14 +75,12 @@ public class SignatureFilter implements ContainerRequestFilter {
 				throw NoSuchBucketException.noSuchBucket(bucket);
 			}
 
-			accessPolicy = ApiPoint.data().internalPublicAccessBlock(bucket).orElse(accessPolicy);
+			isPublic = ApiPoint.data().isBucketPublic(bucket);
 		}
 
-		UriInfo uriInfo = ctx.getUriInfo();
-
 		// Fetch authorization header
-		if (accessPolicy.isRestrictPublicBuckets()) {
-			final String receivedAuth = ctx.getHeaderString("Authorization");
+		if (!isPublic) {
+			final String receivedAuth = authorization;
 			if (Strings.isNullOrEmpty(receivedAuth))
 				throw InvalidAuthException.noAuthorizationHeader();
 			final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);

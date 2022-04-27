@@ -43,6 +43,8 @@ public interface S3DataStore {
 
 	public boolean deleteBucket(S3Context ctx, String bucket);
 
+	public boolean isBucketPublic(String bucket);
+
 	public ListAllMyBucketsResult listBuckets(S3Context ctx);
 
 	public VersioningConfiguration getBucketVersioning(S3Context ctx, String bucket);
@@ -66,7 +68,7 @@ public interface S3DataStore {
 
 	public DeleteResult deleteObjects(S3Context ctx, String bucket, DeleteObjectsRequest request);
 
-	public PutObjectResult putObject(S3Context ctx, String bucket, String key, Optional<String> inputMd5,
+	public PutObjectResult putObject(S3Context ctx, String bucket, String key, Optional<byte[]> inputMd5,
 			Optional<String> contentType, Map<String, String> metadata, InputStream data);
 
 	public CopyObjectResult copyObject(S3Context ctx, String srcBucket, String srcKey, String dstBucket, String dstKey,
