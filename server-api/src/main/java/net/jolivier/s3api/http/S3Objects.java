@@ -207,10 +207,16 @@ public class S3Objects {
 
 		// putObject
 		else {
+			if (!request.getHeaders().containsKey("Content-Length"))
+				throw RequestFailedException.missingContentLength(key);
+
+			if (request.getLength() < 0)
+				throw RequestFailedException.invalidContentLength(key);
+
 			try (InputStream in = isV4signed(request) ? new ChunkedInputStream(request.getEntityStream())
 					: request.getEntityStream()) {
 				final Optional<byte[]> md5 = Optional.ofNullable(inputMd5).map(Base64.getDecoder()::decode);
-				if (md5.isPresent() && md5.get().length != 32)
+				if (md5.isPresent() && md5.get().length != 16)
 					throw RequestFailedException.invalidDigest(key);
 
 				final PutObjectResult result = ApiPoint.data().putObject(ctx, ctx.bucket(), key, md5,
