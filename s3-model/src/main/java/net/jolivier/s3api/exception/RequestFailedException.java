@@ -43,14 +43,14 @@ public class RequestFailedException {
 
 	public static S3Exception invalidBucketName() {
 		return new S3Exception(HttpURLConnection.HTTP_BAD_REQUEST, "InvalidBucketName", "Unknown",
-				"The content length has invalid value.");
+				"The specified bucket is not valid.");
 	}
 
 	public static S3Exception invalidContentLength(String key) {
 		return new S3Exception(HttpURLConnection.HTTP_BAD_REQUEST, "InvalidContentLength", key,
-				"The specified bucket is not valid.");
+				"The content length has invalid value.");
 	}
-	
+
 	public static S3Exception missingContentLength(String key) {
 		return new S3Exception(HttpURLConnection.HTTP_BAD_REQUEST, "MissingContentLength", key,
 				"The Content-Length HTTP header must be provided.");

@@ -35,7 +35,6 @@ public class S3Buckets {
 	 * Head bucket, returns 200 or 404.
 	 * 
 	 */
-	@Path("/")
 	@HEAD
 	@BucketOptional
 	public Response headBucket(@Context S3Context ctx) {
@@ -51,7 +50,6 @@ public class S3Buckets {
 	 * @throws RequestFailedException if the bucket already exists.
 	 * 
 	 */
-	@Path("/")
 	@PUT
 	@Consumes(MediaType.APPLICATION_XML)
 	@BucketOptional
@@ -113,7 +111,6 @@ public class S3Buckets {
 	 * @throws NoSuchBucketException if the bucket does not exists.
 	 * 
 	 */
-	@Path("/")
 	@DELETE
 	public Response deleteBucket(@Context S3Context ctx, @Context UriInfo uriInfo) {
 

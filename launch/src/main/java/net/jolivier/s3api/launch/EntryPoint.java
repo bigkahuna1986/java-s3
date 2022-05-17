@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import net.jolivier.s3api.http.ApiPoint;
 import net.jolivier.s3api.impl.S3Server;
 import net.jolivier.s3api.memory.S3MemoryImpl;
+import net.jolivier.s3api.model.Owner;
 
 /**
  * Default entry point to start the s3 server. Hard coded to listen on
@@ -27,6 +28,8 @@ public class EntryPoint {
 		S3MemoryImpl.configure(true);
 
 		ApiPoint.configure(S3MemoryImpl.INSTANCE, S3MemoryImpl.INSTANCE);
+		Owner owner = S3MemoryImpl.INSTANCE.addOwner("newOwner");
+		S3MemoryImpl.INSTANCE.addUser(owner, "foo", "bar");
 
 		Server server = S3Server.createServer(URI.create("http://" + "0.0.0.0" + ":" + 9090));
 

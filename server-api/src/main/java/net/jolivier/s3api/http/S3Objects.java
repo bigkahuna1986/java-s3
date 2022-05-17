@@ -134,7 +134,6 @@ public class S3Objects {
 	/**
 	 * Delete objects from a bucket
 	 **/
-	@Path("/")
 	@POST
 	@Produces(MediaType.APPLICATION_XML)
 	public DeleteResult deleteObjects(@Context S3Context ctx, @Context ContainerRequest request) {
@@ -213,7 +212,7 @@ public class S3Objects {
 			if (request.getLength() < 0)
 				throw RequestFailedException.invalidContentLength(key);
 
-			try (InputStream in = isV4signed(request) ? new ChunkedInputStream(request.getEntityStream())
+			try (InputStream in = isV4ChunkedRequest(request) ? new ChunkedInputStream(request.getEntityStream())
 					: request.getEntityStream()) {
 				final Optional<byte[]> md5 = Optional.ofNullable(inputMd5).map(Base64.getDecoder()::decode);
 				if (md5.isPresent() && md5.get().length != 16)
@@ -233,7 +232,7 @@ public class S3Objects {
 		}
 	}
 
-	private static final boolean isV4signed(ContainerRequest req) {
+	private static final boolean isV4ChunkedRequest(ContainerRequest req) {
 		String h = req.getHeaderString(AwsHeaders.X_AMZ_CONTENT_SHA256);
 		return h != null && h.equals(AwsHeaders.STREAMING_AWS4_HMAC_SHA256_PAYLOAD);
 	}
@@ -243,7 +242,6 @@ public class S3Objects {
 	 * 
 	 * @throws NoSuchBucketException if the bucket does not exist.
 	 */
-	@Path("/")
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
 	@BucketOptional

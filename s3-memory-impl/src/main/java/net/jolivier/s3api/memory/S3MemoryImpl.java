@@ -122,9 +122,11 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public void addUser(Owner owner, String accessKeyId, String secretKey) {
-		USERS.put(accessKeyId, new User(accessKeyId, secretKey));
+	public User addUser(Owner owner, String accessKeyId, String secretKey) {
+		User user = new User(accessKeyId, secretKey);
+		USERS.put(accessKeyId, user);
 		USER_OWNER_MAPPING.put(accessKeyId, owner.getId());
+		return user;
 	}
 
 	@Override
@@ -134,11 +136,13 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public void addOwner(String displayName) {
+	public Owner addOwner(String displayName) {
 		final byte[] idBytes = new byte[15];
 		S3Context.RANDOM.nextBytes(idBytes);
 		final String id = BaseEncoding.base32().encode(idBytes);
-		OWNERS.put(id, new Owner(displayName, id));
+		Owner owner = new Owner(displayName, id);
+		OWNERS.put(id, owner);
+		return owner;
 	}
 
 	@Override

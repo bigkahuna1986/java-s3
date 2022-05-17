@@ -27,7 +27,7 @@ public interface S3AuthStore {
 	 * @param accessKeyId
 	 * @param secretKey
 	 */
-	public void addUser(Owner owner, String accessKeyId, String secretKey);
+	public User addUser(Owner owner, String accessKeyId, String secretKey);
 
 	/**
 	 * Retrieve an existing user by it's access key.
@@ -52,7 +52,7 @@ public interface S3AuthStore {
 	 * 
 	 * @param displayName
 	 */
-	public void addOwner(String displayName);
+	public Owner addOwner(String displayName);
 
 	/**
 	 * Find an owner for a bucket.
