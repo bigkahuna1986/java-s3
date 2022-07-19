@@ -3,6 +3,7 @@ package net.jolivier.s3api;
 import net.jolivier.s3api.exception.InvalidAuthException;
 import net.jolivier.s3api.exception.NoSuchBucketException;
 import net.jolivier.s3api.exception.RequestFailedException;
+import net.jolivier.s3api.exception.S3Exception;
 import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.User;
 
@@ -36,7 +37,7 @@ public interface S3AuthStore {
 	 * 
 	 * @return The user
 	 * 
-	 * @throws InvalidAuthException if the user does not exist.
+	 * @throws S3Exception if the user does not exist.
 	 */
 	public User user(String accessKeyId);
 
@@ -59,7 +60,7 @@ public interface S3AuthStore {
 	 * 
 	 * @param bucket
 	 * @return The owner
-	 * @throws NoSuchBucketException if the bucket does not exist.
+	 * @throws S3Exception if the bucket does not exist.
 	 */
 	public Owner findOwner(String bucket);
 
@@ -68,7 +69,7 @@ public interface S3AuthStore {
 	 * 
 	 * @param user
 	 * @return The owner
-	 * @throws RequestFailedException if the user doesn't exist.
+	 * @throws S3Exception if the user doesn't exist.
 	 */
 	public Owner findOwner(User user);
 

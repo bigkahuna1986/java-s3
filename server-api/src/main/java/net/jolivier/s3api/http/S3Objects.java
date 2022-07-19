@@ -41,11 +41,10 @@ import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.exception.InternalErrorException;
 import net.jolivier.s3api.exception.InvalidAuthException;
-import net.jolivier.s3api.exception.NoSuchBucketException;
-import net.jolivier.s3api.exception.NoSuchKeyException;
 import net.jolivier.s3api.exception.NotImplementedException;
 import net.jolivier.s3api.exception.PreconditionFailedException;
 import net.jolivier.s3api.exception.RequestFailedException;
+import net.jolivier.s3api.exception.S3Exception;
 import net.jolivier.s3api.model.CopyObjectResult;
 import net.jolivier.s3api.model.DeleteObjectsRequest;
 import net.jolivier.s3api.model.DeleteResult;
@@ -64,7 +63,7 @@ public class S3Objects {
 	/**
 	 * Get an existing object.
 	 *
-	 * @throws NoSuchKeyException if the object does not exist.
+	 * @throws S3Exception if the object does not exist.
 	 */
 	@Path("/{key: .+}")
 	@GET
@@ -120,7 +119,7 @@ public class S3Objects {
 	/**
 	 * Deletes an existing object
 	 * 
-	 * @throws NoSuchKeyExcpetion if the object does not exist.
+	 * @throws S3Exception if the object does not exist.
 	 */
 	@Path("/{key: .+}")
 	@DELETE
@@ -240,7 +239,7 @@ public class S3Objects {
 	/**
 	 * List the objects in a bucket. Enforces a maxKeys 1000 value.
 	 * 
-	 * @throws NoSuchBucketException if the bucket does not exist.
+	 * @throws S3Exception if the bucket does not exist.
 	 */
 	@GET
 	@Produces(MediaType.APPLICATION_XML)

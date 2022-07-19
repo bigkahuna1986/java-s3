@@ -3,22 +3,102 @@ ext {
 }
 
 configure([rootProject] + javaProjects) { project ->
-	apply plugin: 'java-library'
-	sourceCompatibility = 11
-	targetCompatibility = 11
+  apply plugin: 'java-library'
+  sourceCompatibility = 11
+  targetCompatibility = 11
 
-	repositories {
-		mavenCentral()	
-	}
+  repositories {
+    mavenCentral()	
+  }
 
-	configurations.all {
-	  resolutionStrategy {
-	    force 'org.slf4j:slf4j-api:1.7.33'
-	  }
+  configurations.all {
+    resolutionStrategy {
+      force 'org.slf4j:slf4j-api:1.7.33'
 	}
+  }
 
 }
 
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+
 configure(javaProjects) { project ->
-	apply plugin: 'eclipse'
+  apply plugin: 'eclipse'
+  apply plugin: 'maven-publish'
+  apply plugin: 'signing'
+task sourceJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
+javadoc {
+    source = sourceSets.main.allJava
+    classpath = configurations.compileClasspath
+}
+
+afterEvaluate {
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId = 'net.jolivier'
+                artifactId = project.name
+                version = '0.1'
+
+                from components.java
+                jar.preserveFileTimestamps = false
+                jar.reproducibleFileOrder = true
+
+                pom {
+                    signing {
+                        sign publishing.publications.release
+                        sign configurations.archives
+                    }
+                    name = 'Java-S3'
+                    description = 'Java S3 API'
+                    url = 'https://github.com/bigkahuna1986/java-s3'
+                    licenses {
+                        license {
+                            name = 'The Unlicense'
+                            url = 'https://unlicense.org/'
+                        }
+                    }
+                    developers {
+                        developer {
+                            name = 'Josh Olivier'
+                            email = 'josh@jolivier.net'
+                        }
+                    }
+                    scm {
+                        connection = 'scm:git:git://github.com/bigkahuna1986/java-s3.git'
+                        developerConnection = 'scm:git:ssh://github.com/java-s3.git'
+                        url = 'https://github.com/bigkahuna1986/java-s3'
+                    }
+                }
+            }
+        }
+        repositories {
+            maven {
+                name= "sonatype"
+                url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+                credentials {
+                    username = findProperty('nexusUsername')
+                    password = findProperty('nexusPassword')
+                }
+            }
+        }
+    }
+}
 }

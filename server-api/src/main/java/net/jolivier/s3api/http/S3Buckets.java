@@ -16,9 +16,9 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.auth.S3Context;
-import net.jolivier.s3api.exception.NoSuchBucketException;
 import net.jolivier.s3api.exception.NotImplementedException;
 import net.jolivier.s3api.exception.RequestFailedException;
+import net.jolivier.s3api.exception.S3Exception;
 import net.jolivier.s3api.model.CreateBucketConfiguration;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.VersioningConfiguration;
@@ -47,7 +47,7 @@ public class S3Buckets {
 	 * 
 	 * @throws IOException
 	 * 
-	 * @throws RequestFailedException if the bucket already exists.
+	 * @throws S3Exception if the bucket already exists.
 	 * 
 	 */
 	@PUT
@@ -108,7 +108,7 @@ public class S3Buckets {
 	/**
 	 * Delete a bucket.
 	 *
-	 * @throws NoSuchBucketException if the bucket does not exists.
+	 * @throws S3Exception if the bucket does not exists.
 	 * 
 	 */
 	@DELETE

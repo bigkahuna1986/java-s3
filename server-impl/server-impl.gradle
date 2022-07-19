@@ -7,6 +7,7 @@ ext {
 dependencies {
     api(project(":server-api"))
     api(project(":s3-memory-impl"))
+    implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
     api "org.eclipse.jetty:jetty-server:$jettyVersion"
     api "org.eclipse.jetty:jetty-io:$jettyVersion"
     api "org.eclipse.jetty:jetty-http:$jettyVersion"
