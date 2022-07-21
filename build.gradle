@@ -19,17 +19,6 @@ configure([rootProject] + javaProjects) { project ->
 
 }
 
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc
-}
-
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-
 configure(javaProjects) { project ->
   apply plugin: 'eclipse'
   apply plugin: 'maven-publish'
@@ -55,7 +44,7 @@ java {
             release(MavenPublication) {
                 groupId = 'net.jolivier'
                 artifactId = project.name
-                version = '0.1'
+                version = '0.2'
 
                 from components.java
                 jar.preserveFileTimestamps = false
