@@ -49,7 +49,7 @@ public interface IBucket {
 
 	public DeleteResult deleteObjects(S3Context ctx, DeleteObjectsRequest request);
 
-	public PutObjectResult putObject(S3Context ctx, String key, Optional<byte[]> inputMd5, int expectedLength,
+	public PutObjectResult putObject(S3Context ctx, String key, Optional<byte[]> inputMd5, long expectedLength,
 			Optional<String> contentType, Map<String, String> metadata, InputStream data);
 
 	public ListBucketResult listObjects(S3Context ctx, Optional<String> delimiter, Optional<String> encodingType,

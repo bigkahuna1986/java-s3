@@ -3,6 +3,7 @@ package net.jolivier.s3api.model;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class GetObjectResult {
 
@@ -10,11 +11,16 @@ public class GetObjectResult {
 	private final String _etag;
 	private final ZonedDateTime _modified;
 	private final Map<String, String> _metadata;
-	private final int _length;
-	private final InputStream _data;
+	private final long _length;
+	private final Supplier<InputStream> _data;
 
 	public GetObjectResult(String contentType, String etag, ZonedDateTime modified, Map<String, String> metadata,
-			int length, InputStream data) {
+			long length, InputStream data) {
+		this(contentType, etag, modified, metadata, length, () -> data);
+	}
+
+	public GetObjectResult(String contentType, String etag, ZonedDateTime modified, Map<String, String> metadata,
+			long length, Supplier<InputStream> data) {
 		_contentType = contentType;
 		_etag = etag;
 		_modified = modified;
@@ -39,11 +45,11 @@ public class GetObjectResult {
 		return _metadata;
 	}
 
-	public int length() {
+	public long length() {
 		return _length;
 	}
 
-	public InputStream getData() {
+	public Supplier<InputStream> getData() {
 		return _data;
 	}
 

@@ -20,9 +20,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
@@ -48,8 +45,6 @@ import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
 public class MemoryBucket implements IBucket {
-
-	private static final Logger _logger = LoggerFactory.getLogger(MemoryBucket.class);
 
 	private static final class StoredObject {
 		private final Optional<String> _versionId;
@@ -264,7 +259,7 @@ public class MemoryBucket implements IBucket {
 	}
 
 	@Override
-	public PutObjectResult putObject(S3Context ctx, String key, Optional<byte[]> inputMd5, int expectedLength,
+	public PutObjectResult putObject(S3Context ctx, String key, Optional<byte[]> inputMd5, long expectedLength,
 			Optional<String> contentType, Map<String, String> metadata, InputStream data) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {

@@ -1,7 +1,6 @@
-
 ext {
-        jettyVersion= '11.0.9'
-        jerseyVersion = '3.0.4'
+        jettyVersion= '11.0.11'
+        jerseyVersion = '3.0.5'
 }
 
 dependencies {
@@ -20,13 +19,6 @@ dependencies {
 	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.17.2'
 	testImplementation group: 'org.slf4j', name: 'jcl-over-slf4j', version: '1.7.36'
 	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-jul', version: '2.17.2'
-    testImplementation "software.amazon.awssdk:s3:2.17.149"
+    testImplementation "software.amazon.awssdk:s3:2.17.236"
     testImplementation 'junit:junit:4.13'
 }
-
-configurations.all {
-  resolutionStrategy {
-    force 'org.slf4j:slf4j-api:1.7.36'
-  }
-}
-

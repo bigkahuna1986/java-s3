@@ -1,5 +1,6 @@
 package net.jolivier.s3api.memory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import net.jolivier.s3api.S3AuthStore;
 import net.jolivier.s3api.S3DataStore;
 import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.exception.ConflictException;
+import net.jolivier.s3api.exception.InternalErrorException;
 import net.jolivier.s3api.exception.InvalidAuthException;
 import net.jolivier.s3api.exception.NoSuchBucketException;
 import net.jolivier.s3api.exception.RequestFailedException;
@@ -259,11 +261,17 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 		if (!ctx.owner().getId().equals(dstBucket.owner().getId()))
 			throw InvalidAuthException.incorrectOwner();
 
-		final GetObjectResult data = srcBucket.getObject(ctx, srcKey, Optional.empty());
-		dstBucket.putObject(ctx, dstKey, Optional.empty(), data.length(), Optional.of(data.getContentType()),
-				copyMetadata ? data.getMetadata() : newMetadata, data.getData());
+		final GetObjectResult getObject = srcBucket.getObject(ctx, srcKey, Optional.empty());
 
-		return new CopyObjectResult(data.getEtag(), data.getModified());
+		try (InputStream stream = getObject.getData().get();) {
+			dstBucket.putObject(ctx, dstKey, Optional.empty(), getObject.length(),
+					Optional.of(getObject.getContentType()), copyMetadata ? getObject.getMetadata() : newMetadata,
+					stream);
+		} catch (IOException e) {
+			throw InternalErrorException.internalError(ctx, srcKey, e.getLocalizedMessage());
+		}
+
+		return new CopyObjectResult(getObject.getEtag(), getObject.getModified());
 	}
 
 	@Override
