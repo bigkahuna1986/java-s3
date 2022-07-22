@@ -39,7 +39,20 @@ net.jolivier.s3api.http.ApiPoint
 before starting the server. Examples of how to bind the s3 server are in the launch project.
 
 ## Gradle/Maven
-Currently these are not distributed through Maven Central, however I have my keys and group name setup. Once the project has reached a mature level for me, I will push them.
+This project is now published through Maven Central.
+Pull instructions for gradle:
+```gradle
+implementaion "net.jolivier:s3-model:0.2"
+```
+
+or maven
+```maven
+    <dependency>
+      <groupId>net.jolivier</groupId>
+      <artifactId>s3-model</artifactId>
+      <version>0.2</version>
+    </dependency>
+```
 
 
 ## Other Considerations

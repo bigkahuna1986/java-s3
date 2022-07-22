@@ -93,7 +93,7 @@ public class S3Objects {
 			return res;
 		}
 
-		return RequestUtils.writeMetadataHeaders(Response.ok(result.getData()), result.getMetadata())
+		return RequestUtils.writeMetadataHeaders(Response.ok(result.getData().get()), result.getMetadata())
 				.type(result.getContentType()).tag(result.getEtag())
 				.lastModified(Date.from(result.getModified().toInstant())).build();
 	}
