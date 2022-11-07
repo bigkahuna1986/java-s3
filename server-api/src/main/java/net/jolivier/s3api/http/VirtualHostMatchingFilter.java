@@ -2,20 +2,17 @@ package net.jolivier.s3api.http;
 
 import java.io.IOException;
 
+import jakarta.inject.Singleton;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
-import jakarta.ws.rs.container.ResourceInfo;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.ext.Provider;
 import net.jolivier.s3api.exception.NoSuchBucketException;
 
 @Provider
 @PreMatching
+@Singleton
 public class VirtualHostMatchingFilter implements ContainerRequestFilter {
-
-	@Context
-	private ResourceInfo resourceInfo;
 
 	@Override
 	public void filter(ContainerRequestContext ctx) throws IOException {

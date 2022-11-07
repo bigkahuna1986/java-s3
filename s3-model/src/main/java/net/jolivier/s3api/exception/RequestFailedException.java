@@ -15,16 +15,18 @@ import net.jolivier.s3api.auth.S3Context;
 public class RequestFailedException {
 
 	public static S3Exception invalidArgument(S3Context ctx) {
-		return new S3Exception(ctx, HttpURLConnection.HTTP_BAD_REQUEST, "InvalidArgument", ctx.bucket(),
+		return new S3Exception(ctx, HttpURLConnection.HTTP_BAD_REQUEST, "InvalidArgument", ctx.optBucket().orElse(""),
 				"Your request failed");
 	}
 
 	public static S3Exception invalidArgument(S3Context ctx, String message) {
-		return new S3Exception(ctx, HttpURLConnection.HTTP_BAD_REQUEST, "InvalidArgument", ctx.bucket(), message);
+		return new S3Exception(ctx, HttpURLConnection.HTTP_BAD_REQUEST, "InvalidArgument", ctx.optBucket().orElse(""),
+				message);
 	}
 
 	public static S3Exception invalidRequest(S3Context ctx, String message) {
-		return new S3Exception(ctx, HttpURLConnection.HTTP_BAD_REQUEST, "InvalidRequest", ctx.bucket(), message);
+		return new S3Exception(ctx, HttpURLConnection.HTTP_BAD_REQUEST, "InvalidRequest", ctx.optBucket().orElse(""),
+				message);
 	}
 
 	public static S3Exception invalidRequest(String resource, String message) {

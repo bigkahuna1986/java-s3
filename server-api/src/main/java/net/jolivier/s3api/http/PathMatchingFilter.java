@@ -5,11 +5,10 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import jakarta.inject.Singleton;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
-import jakarta.ws.rs.container.ResourceInfo;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.PathSegment;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
@@ -17,10 +16,8 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 @PreMatching
+@Singleton
 public class PathMatchingFilter implements ContainerRequestFilter {
-
-	@Context
-	private ResourceInfo resourceInfo;
 
 	@Override
 	public void filter(ContainerRequestContext ctx) throws IOException {
