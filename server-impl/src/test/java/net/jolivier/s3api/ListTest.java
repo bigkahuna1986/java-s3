@@ -9,6 +9,7 @@ import java.net.URI;
 import java.security.SecureRandom;
 
 import org.eclipse.jetty.server.Server;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -27,6 +28,8 @@ import software.amazon.awssdk.services.s3.model.CreateBucketConfiguration;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class ListTest {
@@ -47,6 +50,11 @@ public class ListTest {
 		RequestLogger.install(_server, DEFAULT_FORMAT);
 
 		_server.start();
+	}
+
+	@AfterClass
+	public static void tearDown() throws Exception {
+		_server.stop();
 	}
 
 	private static final String randomBucket() {
@@ -86,6 +94,42 @@ public class ListTest {
 
 		ListObjectsResponse list1 = s3
 				.listObjects(ListObjectsRequest.builder().bucket(bucket).maxKeys(2).encodingType("url").build());
+		assertTrue("list1 isTruncated should be true!", list1.isTruncated());
+		assertEquals("list1 size", 2, list1.contents().size());
+
+		ListObjectsResponse list2 = s3.listObjects(
+				ListObjectsRequest.builder().bucket(bucket).marker("baz").maxKeys(2).encodingType("url").build());
+		assertFalse("list2 isTruncated should be false!", list2.isTruncated());
+		assertEquals("list2 size", 1, list2.contents().size());
+
+	}
+
+	@Test
+	public void listv2() {
+		final S3ClientBuilder s3Builder = S3Client.builder()
+				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
+
+		s3Builder.region(Region.US_EAST_1).endpointOverride(ENDPOINT)
+				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+
+		final S3Client s3 = s3Builder.build();
+
+		String bucket = randomBucket();
+
+		s3.createBucket(CreateBucketRequest.builder().bucket(bucket)
+
+				.createBucketConfiguration(CreateBucketConfiguration.builder().locationConstraint("us-west-2").build())
+
+				.build());
+
+		final String contents = "blahblahblah";
+
+		s3.putObject(PutObjectRequest.builder().bucket(bucket).key("foo").build(), RequestBody.fromString(contents));
+		s3.putObject(PutObjectRequest.builder().bucket(bucket).key("bar").build(), RequestBody.fromString(contents));
+		s3.putObject(PutObjectRequest.builder().bucket(bucket).key("baz").build(), RequestBody.fromString(contents));
+
+		ListObjectsV2Response list1 = s3
+				.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).maxKeys(2).encodingType("url").build());
 		assertTrue("list1 isTruncated should be true!", list1.isTruncated());
 		assertEquals("list1 size", 2, list1.contents().size());
 
