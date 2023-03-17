@@ -12,6 +12,7 @@ import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
 import net.jolivier.s3api.model.ListBucketResult;
+import net.jolivier.s3api.model.ListBucketResultV2;
 import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.PutObjectResult;
@@ -239,6 +240,24 @@ public interface S3DataStore {
 	 */
 	public ListBucketResult listObjects(S3Context ctx, String bucket, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, int maxKeys, Optional<String> prefix);
+
+	/**
+	 * Lists the objects of a bucket (V2 api).
+	 * 
+	 * @param ctx
+	 * @param bucket
+	 * @param continuationToken
+	 * @param delimiter
+	 * @param encodingType
+	 * @param fetchOwner
+	 * @param maxKeys
+	 * @param prefix
+	 * @param startAfter
+	 * @return
+	 */
+	public ListBucketResultV2 listObjectsV2(S3Context ctx, String bucket, Optional<String> continuationToken,
+			Optional<String> delimiter, Optional<String> encodingType, boolean fetchOwner, int maxKeys,
+			Optional<String> prefix, Optional<String> startAfter);
 
 	/**
 	 * Lists the object versions of a bucket.

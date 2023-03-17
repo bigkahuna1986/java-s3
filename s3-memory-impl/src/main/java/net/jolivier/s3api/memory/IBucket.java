@@ -11,6 +11,7 @@ import net.jolivier.s3api.model.DeleteResult;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListBucketResult;
+import net.jolivier.s3api.model.ListBucketResultV2;
 import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
@@ -54,6 +55,10 @@ public interface IBucket {
 
 	public ListBucketResult listObjects(S3Context ctx, Optional<String> delimiter, Optional<String> encodingType,
 			Optional<String> marker, int maxKeys, Optional<String> prefix);
+
+	public ListBucketResultV2 listObjectsV2(S3Context ctx, Optional<String> continuationToken,
+			Optional<String> delimiter, Optional<String> encodingType, boolean fetchOwner, int maxKeys,
+			Optional<String> prefix, Optional<String> startAfter);
 
 	public ListVersionsResult listObjectVersions(S3Context ctx, Optional<String> delimiter,
 			Optional<String> encodingType, Optional<String> marker, Optional<String> versionIdMarker, int maxKeys,

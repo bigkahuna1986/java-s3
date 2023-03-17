@@ -26,6 +26,7 @@ import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListAllMyBucketsResult;
 import net.jolivier.s3api.model.ListBucketResult;
+import net.jolivier.s3api.model.ListBucketResultV2;
 import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.Owner;
 import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
@@ -286,6 +287,14 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 			Optional<String> prefix) {
 		return bucket(ctx, bucket).listObjectVersions(ctx, delimiter, encodingType, marker, versionIdMarker, maxKeys,
 				prefix);
+	}
+
+	@Override
+	public ListBucketResultV2 listObjectsV2(S3Context ctx, String bucket, Optional<String> continuationToken,
+			Optional<String> delimiter, Optional<String> encodingType, boolean fetchOwner, int maxKeys,
+			Optional<String> prefix, Optional<String> startAfter) {
+		return bucket(ctx, bucket).listObjectsV2(ctx, continuationToken, delimiter, encodingType, fetchOwner, maxKeys,
+				prefix, startAfter);
 	}
 
 }

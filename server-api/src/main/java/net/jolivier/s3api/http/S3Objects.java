@@ -240,10 +240,22 @@ public class S3Objects {
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
 	@BucketOptional
-	public Response listObjectsOrListBuckets(@Context S3Context ctx, @QueryParam("delimiter") String delimiter,
-			@QueryParam("encoding-type") String encodingType, @QueryParam("marker") String marker,
+	public Response listObjectsOrListBuckets(@Context S3Context ctx,
+			// List Common params
+			@QueryParam("delimiter") String delimiter, @QueryParam("encoding-type") String encodingType,
+			@QueryParam("max-keys") @DefaultValue("1000") int maxKeys, @QueryParam("prefix") String prefix,
+
+			// List V1 params
+			@QueryParam("marker") String marker,
+
+			// List V2 params
+			@QueryParam("list-type") String listType,
+			@QueryParam("fetch-owner") @DefaultValue("false") boolean fetchOwner,
+			@QueryParam("continuation-token") String continuationToken, @QueryParam("start-after") String startAfter,
+
+			// List Object Versions params
 			@QueryParam("VersionIdMarker") String versionIdMarker,
-			@DefaultValue("1000") @QueryParam("max-keys") int maxKeys, @QueryParam("prefix") String prefix,
+
 			@Context UriInfo uriInfo) {
 
 		if (maxKeys > 1000 || maxKeys < 1)
@@ -273,6 +285,13 @@ public class S3Objects {
 				return Response.ok(ApiPoint.data().listObjectVersions(ctx, ctx.bucket(), ofNullable(delimiter),
 						ofNullable(encodingType), ofNullable(marker), ofNullable(versionIdMarker), maxKeys,
 						ofNullable(prefix))).build();
+		}
+
+		// list objects v2.
+		if ("2".equals(listType)) {
+			return Response.ok(ApiPoint.data().listObjectsV2(ctx, ctx.bucket(), ofNullable(continuationToken),
+					ofNullable(delimiter), ofNullable(encodingType), fetchOwner, maxKeys, ofNullable(prefix),
+					ofNullable(startAfter))).build();
 		}
 
 		return Response.ok(ApiPoint.data().listObjects(ctx, ctx.bucket(), Optional.ofNullable(delimiter),

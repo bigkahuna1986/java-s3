@@ -35,7 +35,9 @@ import net.jolivier.s3api.model.Deleted;
 import net.jolivier.s3api.model.GetObjectResult;
 import net.jolivier.s3api.model.HeadObjectResult;
 import net.jolivier.s3api.model.ListBucketResult;
+import net.jolivier.s3api.model.ListBucketResultV2;
 import net.jolivier.s3api.model.ListObject;
+import net.jolivier.s3api.model.ListObjectV2;
 import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.ObjectIdentifier;
 import net.jolivier.s3api.model.ObjectVersion;
@@ -395,6 +397,60 @@ public class MemoryBucket implements IBucket {
 		return new ListVersionsResult(truncated, marker.orElse(null), nextMarker, _name, prefix.orElse(null),
 				delimiter.orElse(null), encodingType.orElse(null), nextVersionIdMarker.orElse(null), maxKeys,
 				prefix.map(Collections::singletonList).orElse(null), list);
+	}
+
+	@Override
+	public ListBucketResultV2 listObjectsV2(S3Context ctx, Optional<String> continuationToken,
+			Optional<String> delimiter, Optional<String> encodingType, boolean fetchOwner, int maxKeys,
+			Optional<String> prefix, Optional<String> startAfter) {
+		final List<String> keys = new ArrayList<>(prefix.isPresent()
+				? _objects.keySet().stream().filter(k -> k.startsWith(prefix.get())).collect(Collectors.toList())
+				: _objects.keySet());
+		// Has to be natural order for ASCII order.
+		keys.sort(Comparator.naturalOrder());
+
+		int startIndex = 0;
+		if (startAfter.isPresent()) {
+			int idx = keys.indexOf(startAfter.get());
+			if (idx >= 0)
+				startIndex = idx + 1;
+			else {
+				return new ListBucketResultV2(false, Collections.emptyList(), _name, prefix.orElse(null),
+						delimiter.orElse(null), maxKeys, new ArrayList<>(), encodingType.orElse(null), null, null,
+						null);
+			}
+		}
+
+		final int endIndex = Math.min(startIndex + maxKeys, keys.size());
+
+		if (startIndex == endIndex)
+			throw RequestFailedException.invalidArgument(ctx, "Invalid key start-after " + startAfter.orElse("NA"));
+
+		boolean truncated = false;
+
+		List<ListObjectV2> list = new ArrayList<>(keys.size());
+		Set<String> commonPrefixes = new HashSet<>();
+		int i = startIndex;
+		while (list.size() < maxKeys && i < endIndex) {
+			String key = keys.get(i);
+			List<StoredObject> versions = _objects.get(key);
+			if (!versions.isEmpty()) {
+				StoredObject metadata = versions.get(versions.size() - 1);
+				list.add(new ListObjectV2(metadata.etag(), key, metadata.modified(), fetchOwner ? _owner : null,
+						metadata.data().length));
+			}
+			i++;
+		}
+
+		String nextMarker = null;
+		if (endIndex < keys.size()) {
+			nextMarker = keys.get(endIndex);
+			truncated = true;
+		}
+
+		return new ListBucketResultV2(truncated, list, _name, prefix.orElse(null), delimiter.orElse(null), maxKeys,
+				new ArrayList<>(commonPrefixes), encodingType.orElse(null), continuationToken.orElse(null),
+				truncated && continuationToken.isPresent() ? continuationToken.get() : null, nextMarker);
 	}
 
 }
