@@ -20,9 +20,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
@@ -50,8 +47,6 @@ import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
 public class MemoryBucket implements IBucket {
-
-	private static final Logger _logger = LoggerFactory.getLogger(MemoryBucket.class);
 
 	private static final class StoredObject {
 		private final Optional<String> _versionId;
@@ -346,8 +341,6 @@ public class MemoryBucket implements IBucket {
 			truncated = true;
 		}
 
-		
-
 		ListBucketResult result = new ListBucketResult(truncated, marker.orElse(null), nextMarker, _name,
 				prefix.orElse(null), delimiter.orElse(null), maxKeys, encodingType.orElse(null),
 				new ArrayList<>(commonPrefixes), list);
@@ -415,8 +408,6 @@ public class MemoryBucket implements IBucket {
 				: _objects.keySet());
 		// Has to be natural order for ASCII order.
 		keys.sort(Comparator.naturalOrder());
-		
-		_logger.info("keys {}", keys);
 
 		int startIndex = 0;
 		if (startAfter.isPresent()) {
@@ -453,11 +444,9 @@ public class MemoryBucket implements IBucket {
 
 		String nextStartAfter = null;
 		if (endIndex < keys.size()) {
-			nextStartAfter = keys.get(endIndex-1);
+			nextStartAfter = keys.get(endIndex - 1);
 			truncated = true;
 		}
-		
-		_logger.info("nsa {} trunc {} si {} ei {}", nextStartAfter, truncated, startIndex, endIndex);
 
 		return new ListBucketResultV2(truncated, list, _name, prefix.orElse(null), delimiter.orElse(null), maxKeys,
 				new ArrayList<>(commonPrefixes), encodingType.orElse(null), continuationToken.orElse(null),

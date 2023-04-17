@@ -209,8 +209,8 @@ public class ListTest {
 		assertTrue("list1 isTruncated should be true!", list1.isTruncated());
 		assertEquals("list1 size", 2, list1.contents().size());
 
-		ListObjectsResponse list2 = s3.listObjects(
-				ListObjectsRequest.builder().bucket(bucket).marker("baz").maxKeys(2).encodingType("url").build());
+		ListObjectsV2Response list2 = s3.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket)
+				.startAfter(list1.startAfter()).maxKeys(2).encodingType("url").build());
 		assertFalse("list2 isTruncated should be false!", list2.isTruncated());
 		assertEquals("list2 size", 1, list2.contents().size());
 
