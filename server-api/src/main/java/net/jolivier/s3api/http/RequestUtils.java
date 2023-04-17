@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.glassfish.jersey.server.ContainerRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 
@@ -35,8 +33,6 @@ import uk.co.lucasweb.aws.v4.signer.credentials.AwsCredentials;
  */
 public enum RequestUtils {
 	;
-
-	private static final Logger _logger = LoggerFactory.getLogger(RequestUtils.class);
 
 	public static final Pattern BUCKET_REGEX = Pattern.compile(
 			"(?=^.{3,63}$)(?!^(\\d+\\.)+\\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])$)");

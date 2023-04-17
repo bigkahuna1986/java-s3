@@ -76,7 +76,7 @@ public class ApiTests {
 	}
 
 	private static final String randomBucket() {
-		return "bucket-" + RANDOM.nextInt(1000);
+		return "bucket-" + RANDOM.nextInt(10000);
 	}
 
 	private static final String randomKey(boolean prefix) {

@@ -2,9 +2,6 @@ package net.jolivier.s3api.http;
 
 import java.net.URI;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Strings;
 
 import jakarta.inject.Singleton;
@@ -28,8 +25,6 @@ import net.jolivier.s3api.model.User;
 @Provider
 @Singleton
 public class SignatureFilter implements ContainerRequestFilter {
-
-	private static final Logger _logger = LoggerFactory.getLogger(SignatureFilter.class);
 
 	public static final String CTX_KEY = "s3ctx";
 
