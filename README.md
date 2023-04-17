@@ -53,7 +53,7 @@ before starting the server. Examples of how to bind the s3 server are in the lau
 This project is now published through Maven Central.
 Pull instructions for gradle:
 ```gradle
-implementaion "net.jolivier:s3-model:0.4"
+implementaion "net.jolivier:s3-model:0.5"
 ```
 
 or maven
@@ -61,7 +61,7 @@ or maven
     <dependency>
       <groupId>net.jolivier</groupId>
       <artifactId>s3-model</artifactId>
-      <version>0.4</version>
+      <version>0.5</version>
     </dependency>
 ```
 
