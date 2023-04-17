@@ -5,7 +5,6 @@ ext {
 
 dependencies {
     api(project(":server-api"))
-    api(project(":s3-memory-impl"))
     implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
     api "org.eclipse.jetty:jetty-server:$jettyVersion"
     api "org.eclipse.jetty:jetty-io:$jettyVersion"
@@ -19,6 +18,7 @@ dependencies {
 	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.20.0'
 	testImplementation group: 'org.slf4j', name: 'jcl-over-slf4j', version: '1.7.36'
 	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-jul', version: '2.20.0'
-    testImplementation "software.amazon.awssdk:s3:2.20.26"
+    testImplementation "software.amazon.awssdk:s3:2.20.47"
     testImplementation 'junit:junit:4.13.2'
+    testImplementation(project(":s3-memory-impl"))
 }
