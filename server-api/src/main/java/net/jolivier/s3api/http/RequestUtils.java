@@ -5,12 +5,15 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.glassfish.jersey.server.ContainerRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
@@ -22,8 +25,8 @@ import net.jolivier.s3api.AwsHeaders;
 import net.jolivier.s3api.exception.InvalidAuthException;
 import uk.co.lucasweb.aws.v4.signer.HttpRequest;
 import uk.co.lucasweb.aws.v4.signer.Signer;
-import uk.co.lucasweb.aws.v4.signer.SigningException;
 import uk.co.lucasweb.aws.v4.signer.Signer.Builder;
+import uk.co.lucasweb.aws.v4.signer.SigningException;
 import uk.co.lucasweb.aws.v4.signer.credentials.AwsCredentials;
 
 /**
@@ -31,6 +34,8 @@ import uk.co.lucasweb.aws.v4.signer.credentials.AwsCredentials;
  */
 public enum RequestUtils {
 	;
+
+	private static final Logger _logger = LoggerFactory.getLogger(RequestUtils.class);
 
 	public static final Pattern BUCKET_REGEX = Pattern.compile(
 			"(?=^.{3,63}$)(?!^(\\d+\\.)+\\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])$)");
@@ -93,11 +98,8 @@ public enum RequestUtils {
 
 			signer.awsCredentials(new AwsCredentials(accessKey, secretKey)).region(region);
 
-			final Map<String, String> map = request.getHeaders().entrySet().stream()
-					.collect(Collectors.toMap(e -> e.getKey().toLowerCase(), e -> e.getValue().get(0).trim()));
-
 			for (String name : signedHeaders.split(";")) {
-				signer.header(name.trim(), map.get(name));
+				signer.header(name, request.getHeaderString(name));
 			}
 
 			final String signature = signer.buildS3(new HttpRequest(request.getMethod(), requestUri),

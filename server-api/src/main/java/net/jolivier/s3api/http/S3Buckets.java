@@ -14,7 +14,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
-import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.exception.NotImplementedException;
 import net.jolivier.s3api.exception.RequestFailedException;

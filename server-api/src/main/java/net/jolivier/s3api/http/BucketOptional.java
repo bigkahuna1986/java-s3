@@ -1,4 +1,4 @@
-package net.jolivier.s3api;
+package net.jolivier.s3api.http;
 
 /**
  * Indicates a method does not require a bucket exists before the method is

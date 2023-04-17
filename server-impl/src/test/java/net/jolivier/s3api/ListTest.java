@@ -97,11 +97,48 @@ public class ListTest {
 		assertTrue("list1 isTruncated should be true!", list1.isTruncated());
 		assertEquals("list1 size", 2, list1.contents().size());
 
-		ListObjectsResponse list2 = s3.listObjects(
-				ListObjectsRequest.builder().bucket(bucket).marker("baz").maxKeys(2).encodingType("url").build());
+		ListObjectsResponse list2 = s3.listObjects(ListObjectsRequest.builder().bucket(bucket)
+				.marker(list1.nextMarker()).maxKeys(2).encodingType("url").build());
 		assertFalse("list2 isTruncated should be false!", list2.isTruncated());
 		assertEquals("list2 size", 1, list2.contents().size());
+	}
 
+	@Test
+	public void listWPrefix() {
+		final S3ClientBuilder s3Builder = S3Client.builder()
+				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
+
+		s3Builder.region(Region.US_EAST_1).endpointOverride(ENDPOINT)
+				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+
+		final S3Client s3 = s3Builder.build();
+
+		String bucket = randomBucket();
+
+		s3.createBucket(CreateBucketRequest.builder().bucket(bucket)
+
+				.createBucketConfiguration(CreateBucketConfiguration.builder().locationConstraint("us-west-2").build())
+
+				.build());
+
+		final String contents = "blahblahblah";
+
+		s3.putObject(PutObjectRequest.builder().bucket(bucket).key("max/foo").build(),
+				RequestBody.fromString(contents));
+		s3.putObject(PutObjectRequest.builder().bucket(bucket).key("max/bar").build(),
+				RequestBody.fromString(contents));
+		s3.putObject(PutObjectRequest.builder().bucket(bucket).key("max/baz").build(),
+				RequestBody.fromString(contents));
+
+		ListObjectsResponse list1 = s3.listObjects(
+				ListObjectsRequest.builder().bucket(bucket).maxKeys(2).prefix("max").encodingType("url").build());
+		assertTrue("list1 isTruncated should be true!", list1.isTruncated());
+		assertEquals("list1 size", 2, list1.contents().size());
+
+		ListObjectsResponse list2 = s3.listObjects(ListObjectsRequest.builder().bucket(bucket)
+				.marker(list1.nextMarker()).maxKeys(2).prefix("max").encodingType("url").build());
+		assertFalse("list2 isTruncated should be false!", list2.isTruncated());
+		assertEquals("list2 size", 1, list2.contents().size());
 	}
 
 	@Test
@@ -130,6 +167,45 @@ public class ListTest {
 
 		ListObjectsV2Response list1 = s3
 				.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).maxKeys(2).encodingType("url").build());
+		assertTrue("list1 isTruncated should be true!", list1.isTruncated());
+		assertEquals("list1 size", 2, list1.contents().size());
+
+		ListObjectsV2Response list2 = s3.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket)
+				.startAfter(list1.startAfter()).maxKeys(2).encodingType("url").build());
+		assertFalse("list2 isTruncated should be false!", list2.isTruncated());
+		assertEquals("list2 size", 1, list2.contents().size());
+
+	}
+
+	@Test
+	public void listv2WPrefixes() {
+		final S3ClientBuilder s3Builder = S3Client.builder()
+				.credentialsProvider(StaticCredentialsProvider.create(CREDS));
+
+		s3Builder.region(Region.US_EAST_1).endpointOverride(ENDPOINT)
+				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+
+		final S3Client s3 = s3Builder.build();
+
+		String bucket = randomBucket();
+
+		s3.createBucket(CreateBucketRequest.builder().bucket(bucket)
+
+				.createBucketConfiguration(CreateBucketConfiguration.builder().locationConstraint("us-west-2").build())
+
+				.build());
+
+		final String contents = "blahblahblah";
+
+		s3.putObject(PutObjectRequest.builder().bucket(bucket).key("test/foo").build(),
+				RequestBody.fromString(contents));
+		s3.putObject(PutObjectRequest.builder().bucket(bucket).key("test/bar").build(),
+				RequestBody.fromString(contents));
+		s3.putObject(PutObjectRequest.builder().bucket(bucket).key("test/baz").build(),
+				RequestBody.fromString(contents));
+
+		ListObjectsV2Response list1 = s3.listObjectsV2(
+				ListObjectsV2Request.builder().bucket(bucket).prefix("test/").maxKeys(2).encodingType("url").build());
 		assertTrue("list1 isTruncated should be true!", list1.isTruncated());
 		assertEquals("list1 size", 2, list1.contents().size());
 

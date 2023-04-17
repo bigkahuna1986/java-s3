@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jolivier.s3api.http.ApiPoint;
+import net.jolivier.s3api.impl.RequestLogger;
 import net.jolivier.s3api.impl.S3Server;
 import net.jolivier.s3api.memory.S3MemoryImpl;
 import net.jolivier.s3api.model.Owner;
@@ -33,7 +34,7 @@ public class EntryPoint {
 
 		Server server = S3Server.createServer(URI.create("http://" + "0.0.0.0" + ":" + 9090));
 
-//		RequestLogger.install(server, RequestLogger.DEFAULT_FORMAT);
+		RequestLogger.install(server, RequestLogger.DEFAULT_FORMAT);
 
 		SigTerm.register(() -> {
 			server.stop();

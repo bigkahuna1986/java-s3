@@ -20,6 +20,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
@@ -47,6 +50,8 @@ import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
 public class MemoryBucket implements IBucket {
+
+	private static final Logger _logger = LoggerFactory.getLogger(MemoryBucket.class);
 
 	private static final class StoredObject {
 		private final Optional<String> _versionId;
@@ -307,7 +312,7 @@ public class MemoryBucket implements IBucket {
 		if (marker.isPresent()) {
 			int idx = keys.indexOf(marker.get());
 			if (idx >= 0)
-				startIndex = idx + 1;
+				startIndex = idx;
 			else {
 				return new ListBucketResult(false, marker.orElse(null), null, _name, prefix.orElse(null),
 						delimiter.orElse(null), maxKeys, encodingType.orElse(null), new ArrayList<>(),
@@ -340,6 +345,8 @@ public class MemoryBucket implements IBucket {
 			nextMarker = keys.get(endIndex);
 			truncated = true;
 		}
+
+		
 
 		ListBucketResult result = new ListBucketResult(truncated, marker.orElse(null), nextMarker, _name,
 				prefix.orElse(null), delimiter.orElse(null), maxKeys, encodingType.orElse(null),
@@ -408,6 +415,8 @@ public class MemoryBucket implements IBucket {
 				: _objects.keySet());
 		// Has to be natural order for ASCII order.
 		keys.sort(Comparator.naturalOrder());
+		
+		_logger.info("keys {}", keys);
 
 		int startIndex = 0;
 		if (startAfter.isPresent()) {
@@ -442,15 +451,17 @@ public class MemoryBucket implements IBucket {
 			i++;
 		}
 
-		String nextMarker = null;
+		String nextStartAfter = null;
 		if (endIndex < keys.size()) {
-			nextMarker = keys.get(endIndex);
+			nextStartAfter = keys.get(endIndex-1);
 			truncated = true;
 		}
+		
+		_logger.info("nsa {} trunc {} si {} ei {}", nextStartAfter, truncated, startIndex, endIndex);
 
 		return new ListBucketResultV2(truncated, list, _name, prefix.orElse(null), delimiter.orElse(null), maxKeys,
 				new ArrayList<>(commonPrefixes), encodingType.orElse(null), continuationToken.orElse(null),
-				truncated && continuationToken.isPresent() ? continuationToken.get() : null, nextMarker);
+				truncated && continuationToken.isPresent() ? continuationToken.get() : null, nextStartAfter);
 	}
 
 }

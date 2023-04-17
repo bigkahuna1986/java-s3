@@ -41,6 +41,12 @@ public class AwsSigV4 {
 
 	}
 
+	@Override
+	public String toString() {
+		return "AwsSigV4 [_signature=" + _signature + ", _date=" + _date + ", _region=" + _region + ", _headers="
+				+ _headers + ", _accessKeyId=" + _accessKeyId + "]";
+	}
+
 	public String accessKeyId() {
 		return _accessKeyId;
 	}

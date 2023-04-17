@@ -2,6 +2,9 @@ package net.jolivier.s3api.http;
 
 import java.net.URI;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Strings;
 
 import jakarta.inject.Singleton;
@@ -25,6 +28,8 @@ import net.jolivier.s3api.model.User;
 @Provider
 @Singleton
 public class SignatureFilter implements ContainerRequestFilter {
+
+	private static final Logger _logger = LoggerFactory.getLogger(SignatureFilter.class);
 
 	public static final String CTX_KEY = "s3ctx";
 
@@ -75,23 +80,12 @@ public class SignatureFilter implements ContainerRequestFilter {
 
 		// Fetch authorization header
 		if (!isPublic) {
-			final String receivedAuth = authorization;
-			if (Strings.isNullOrEmpty(receivedAuth))
-				throw InvalidAuthException.noAuthorizationHeader();
-			final AwsSigV4 sigv4 = new AwsSigV4(receivedAuth);
-			final User user = ApiPoint.auth().user(sigv4.accessKeyId());
-
-			final URI requestUri = ctx.getPropertyNames().contains(ORIG_URI) ? (URI) ctx.getProperty(ORIG_URI)
-					: uriInfo.getRequestUri();
-
-			final String computedAuth = RequestUtils.calculateV4Sig(ctx, requestUri, sigv4.signedHeaders(),
-					sigv4.accessKeyId(), user.secretAccessKey(), sigv4.region());
-
-			if (!receivedAuth.equals(computedAuth)) {
+			final AwsSigV4 sigv4 = (AwsSigV4) ctx.getProperty("sigv4");
+			if (sigv4 == null) {
 				throw InvalidAuthException.invalidAuth();
 			}
 
-			ctx.setProperty("sigv4", sigv4);
+			final User user = ApiPoint.auth().user(sigv4.accessKeyId());
 
 			if (!Strings.isNullOrEmpty(bucket))
 				ctx.setProperty(CTX_KEY,

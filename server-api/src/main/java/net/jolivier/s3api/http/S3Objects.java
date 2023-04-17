@@ -35,7 +35,6 @@ import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.AwsHeaders;
-import net.jolivier.s3api.BucketOptional;
 import net.jolivier.s3api.auth.S3Context;
 import net.jolivier.s3api.exception.InternalErrorException;
 import net.jolivier.s3api.exception.InvalidAuthException;

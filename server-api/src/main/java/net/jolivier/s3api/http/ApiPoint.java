@@ -31,7 +31,7 @@ public enum ApiPoint {
 	/**
 	 * Must be configured with a non-null data store and auth store.
 	 * 
-	 * domainBase can be null.
+	 * domainBase can be null if using the PathMatchingFilter.
 	 * 
 	 * @param data
 	 * @param auth
