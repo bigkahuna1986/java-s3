@@ -9,11 +9,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Strings;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
@@ -94,20 +95,33 @@ public enum RequestUtils {
 			String accessKey, String secretKey, String region) {
 
 		try {
-			Builder signer = Signer.builder();
+			Builder builder = Signer.builder();
 
-			signer.awsCredentials(new AwsCredentials(accessKey, secretKey)).region(region);
+			builder.awsCredentials(new AwsCredentials(accessKey, secretKey)).region(region);
 
 			for (String name : signedHeaders.split(";")) {
-				signer.header(name, request.getHeaderString(name));
+				builder.header(name, request.getHeaderString(name));
 			}
 
-			final String signature = signer.buildS3(new HttpRequest(request.getMethod(), requestUri),
-					request.getHeaderString("x-amz-content-sha256")).getSignature();
+			final String rawPath = requestUri.getRawPath();
+			final String rawQuery = requestUri.getRawQuery();
+
+			final String decodedPath = java.net.URLDecoder.decode(rawPath, StandardCharsets.UTF_8);
+			final String decodedQuery = rawQuery == null ? null
+					: java.net.URLDecoder.decode(rawQuery, StandardCharsets.UTF_8);
+
+			final Signer signer = builder.buildS3(
+					new HttpRequest(request.getMethod(),
+							decodedPath + (Strings.isNullOrEmpty(decodedQuery) ? "" : ("?" + decodedQuery))),
+					request.getHeaderString("x-amz-content-sha256"));
+
+			final String signature = signer.getSignature();
 
 			return signature;
 		} catch (SigningException e) {
 			throw InvalidAuthException.malformedSignature();
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
 		}
 	}
 
