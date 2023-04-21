@@ -14,7 +14,6 @@ import net.jolivier.s3api.model.ListBucketResult;
 import net.jolivier.s3api.model.ListBucketResultV2;
 import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.Owner;
-import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
@@ -33,14 +32,6 @@ public interface IBucket {
 	public VersioningConfiguration getBucketVersioning(S3Context ctx);
 
 	public boolean putBucketVersioning(S3Context ctx, VersioningConfiguration config);
-
-	public Optional<PublicAccessBlockConfiguration> internalPublicAccessBlock();
-
-	public PublicAccessBlockConfiguration getPublicAccessBlock(S3Context ctx);
-
-	public boolean putPublicAccessBlock(S3Context ctx, PublicAccessBlockConfiguration config);
-
-	public boolean deletePublicAccessBlock(S3Context ctx);
 
 	public GetObjectResult getObject(S3Context ctx, String key, Optional<String> versionId);
 

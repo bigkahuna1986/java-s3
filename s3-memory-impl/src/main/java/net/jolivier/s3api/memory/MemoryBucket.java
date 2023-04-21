@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 
@@ -42,7 +41,6 @@ import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.ObjectIdentifier;
 import net.jolivier.s3api.model.ObjectVersion;
 import net.jolivier.s3api.model.Owner;
-import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
@@ -88,6 +86,12 @@ public class MemoryBucket implements IBucket {
 			return _metadata;
 		}
 
+		@Override
+		public String toString() {
+			return "StoredObject [_versionId=" + _versionId + ", _deleted=" + _deleted + ", _contentType="
+					+ _contentType + ", _etag=" + _etag + ", _modified=" + _modified + ", _metadata=" + _metadata + "]";
+		}
+
 	}
 
 	private final ZonedDateTime _created = ZonedDateTime.now();
@@ -96,26 +100,19 @@ public class MemoryBucket implements IBucket {
 	private final String _name;
 	private final String _location;
 
-	private PublicAccessBlockConfiguration _accessPolicy = PublicAccessBlockConfiguration.ALL_RESTRICTED;
-	private VersioningConfiguration _versioning = VersioningConfiguration.disabled();
+	private Optional<VersioningConfiguration> _versioning = Optional.empty();
 
 	private final Map<String, List<StoredObject>> _objects = new ConcurrentHashMap<>();
 
 	public static final IBucket create(Owner owner, String name, String location) {
 		return new MemoryBucket(requireNonNull(owner, "owner"), requireNonNull(name, "name"),
-				requireNonNull(location, "location"), VersioningConfiguration.disabled());
+				requireNonNull(location, "location"));
 	}
 
-	public static final IBucket create(Owner owner, String name, String location, VersioningConfiguration config) {
-		return new MemoryBucket(requireNonNull(owner, "owner"), requireNonNull(name, "name"),
-				requireNonNull(location, "location"), requireNonNull(config, "versioning"));
-	}
-
-	private MemoryBucket(Owner owner, String name, String location, VersioningConfiguration config) {
+	private MemoryBucket(Owner owner, String name, String location) {
 		_owner = owner;
 		_name = name;
 		_location = location;
-		_versioning = config;
 	}
 
 	@Override
@@ -145,40 +142,23 @@ public class MemoryBucket implements IBucket {
 
 	@Override
 	public VersioningConfiguration getBucketVersioning(S3Context ctx) {
-		return _versioning.copy();
+		return _versioning.map(VersioningConfiguration::copy).orElseGet(VersioningConfiguration::unversioned);
 	}
 
 	@Override
 	public boolean putBucketVersioning(S3Context ctx, VersioningConfiguration config) {
-		if (_versioning.isDisabled())
-			throw RequestFailedException.invalidBucketState(ctx);
 
-		_versioning = config;
+		if (_versioning.isPresent()) {
+			_versioning = Optional.of(config);
+			return true;
+		}
 
-		return true;
-	}
+		if (config.isEnabled()) {
+			_versioning = Optional.of(config);
+			return true;
+		}
 
-	@Override
-	public Optional<PublicAccessBlockConfiguration> internalPublicAccessBlock() {
-		return Optional.of(_accessPolicy);
-	}
-
-	@Override
-	public PublicAccessBlockConfiguration getPublicAccessBlock(S3Context ctx) {
-		return _accessPolicy;
-	}
-
-	@Override
-	public boolean putPublicAccessBlock(S3Context ctx, PublicAccessBlockConfiguration config) {
-		_accessPolicy = config;
-		return true;
-	}
-
-	@Override
-	public boolean deletePublicAccessBlock(S3Context ctx) {
-		_accessPolicy = PublicAccessBlockConfiguration.ALL_RESTRICTED;
-
-		return false;
+		throw RequestFailedException.invalidBucketState(ctx);
 	}
 
 	@Override
@@ -222,22 +202,33 @@ public class MemoryBucket implements IBucket {
 
 	@Override
 	public boolean deleteObject(S3Context ctx, String key, Optional<String> versionId) {
-		List<StoredObject> list = _objects.get(key);
+		final var list = _objects.get(key);
 		if (list != null) {
-			if (versionId.isPresent()) {
-				return list.stream()
+			if (versionId.isPresent() && _versioning.map(VersioningConfiguration::isEnabled).orElse(false)) {
+
+				final boolean result = list.stream()
 						.filter(so -> so._versionId.isPresent() && so._versionId.get().equals(versionId.get()))
 						.findFirst().map(list::remove).orElse(Boolean.FALSE);
+
+				if (result && list.isEmpty())
+					_objects.remove(key);
+
+				return result;
 			}
 
-			if (_versioning.isDisabled() || _versioning.isSuspended()) {
-				return list.stream().filter(so -> so._versionId.isEmpty()).findFirst().map(list::remove)
+			if (!_versioning.map(VersioningConfiguration::isEnabled).orElse(false)) {
+				final boolean result = list.stream().filter(so -> so._versionId.isEmpty()).findFirst().map(list::remove)
 						.orElse(Boolean.FALSE);
+
+				if (list.isEmpty())
+					_objects.remove(key);
+
+				return result;
 			}
 
-			list.add(new StoredObject(
-					_versioning.isEnabled() ? Optional.of(S3Context.createVersionId()) : Optional.empty(), true, null,
-					null, null, ZonedDateTime.now(), Collections.emptyMap()));
+			list.add(new StoredObject(_versioning.map(VersioningConfiguration::isEnabled).orElse(false)
+					? Optional.of(S3Context.createVersionId())
+					: Optional.empty(), true, null, null, null, ZonedDateTime.now(), Collections.emptyMap()));
 			return true;
 		}
 		return false;
@@ -249,8 +240,11 @@ public class MemoryBucket implements IBucket {
 		List<DeleteError> errors = new LinkedList<>();
 
 		for (ObjectIdentifier oi : request.getObjects()) {
-			boolean result = deleteObject(ctx, oi.getKey(),
-					Strings.isNullOrEmpty(oi.getVersionId()) ? Optional.empty() : Optional.of(oi.getVersionId()));
+			final Optional<String> versionId = _versioning.map(VersioningConfiguration::isEnabled).orElse(false)
+					? Optional.ofNullable(oi.getVersionId())
+					: Optional.empty();
+
+			boolean result = deleteObject(ctx, oi.getKey(), versionId);
 			if (result)
 				deleted.add(new Deleted(oi.getKey()));
 			else
@@ -269,11 +263,12 @@ public class MemoryBucket implements IBucket {
 			final byte[] bytes = baos.toByteArray();
 
 			if (bytes.length != expectedLength) {
+				// ?
 			}
 
 			Optional<String> versionId = Optional.empty();
 
-			if (_versioning.isEnabled())
+			if (_versioning.map(VersioningConfiguration::isEnabled).orElse(false))
 				versionId = Optional.of(S3Context.createVersionId());
 
 			final byte[] calculatedMd5 = Hashing.md5().hashBytes(bytes).asBytes();

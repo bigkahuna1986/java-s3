@@ -5,14 +5,11 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.glassfish.jersey.server.ContainerRequest;
-
-import com.google.common.base.Strings;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
@@ -21,12 +18,7 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import net.jolivier.s3api.AwsHeaders;
-import net.jolivier.s3api.exception.InvalidAuthException;
-import uk.co.lucasweb.aws.v4.signer.HttpRequest;
-import uk.co.lucasweb.aws.v4.signer.Signer;
-import uk.co.lucasweb.aws.v4.signer.Signer.Builder;
-import uk.co.lucasweb.aws.v4.signer.SigningException;
-import uk.co.lucasweb.aws.v4.signer.credentials.AwsCredentials;
+import net.jolivier.s3api.auth.SignatureGenerator;
 
 /**
  * Static utility methods for various requests.
@@ -91,31 +83,28 @@ public enum RequestUtils {
 			String accessKey, String secretKey, String region) {
 
 		try {
-			Builder builder = Signer.builder();
+			final var gen = SignatureGenerator.s3(requestUri.getPath(), request.getMethod(), region);
 
-			builder.awsCredentials(new AwsCredentials(accessKey, secretKey)).region(region);
+			request.getUriInfo().getQueryParameters(true).entrySet().stream()
+					.forEach(e -> gen.queryParam(e.getKey(), String.join(",", e.getValue())));
 
 			for (String name : signedHeaders.split(";")) {
-				builder.header(name, request.getHeaderString(name));
+				if (!"host".equalsIgnoreCase(name))
+					gen.header(name, request.getHeaderString(name));
+				else {
+					String hostHeader = requestUri.getHost();
+					int port = requestUri.getPort();
+					if (port > -1) {
+						hostHeader = hostHeader.concat(":" + port);
+					}
+					gen.header("host", hostHeader);
+				}
 			}
 
-			final String rawPath = requestUri.getRawPath();
-			final String rawQuery = requestUri.getRawQuery();
+			gen.dateTimeStamp(request.getHeaderString("x-amz-date")).accessKey(accessKey).secretKey(secretKey)
+					.bodyHash(request.getHeaderString("x-amz-content-sha256"));
 
-			final String decodedPath = java.net.URLDecoder.decode(rawPath, StandardCharsets.UTF_8);
-			final String decodedQuery = rawQuery == null ? null
-					: java.net.URLDecoder.decode(rawQuery, StandardCharsets.UTF_8);
-
-			final Signer signer = builder.buildS3(
-					new HttpRequest(request.getMethod(),
-							decodedPath + (Strings.isNullOrEmpty(decodedQuery) ? "" : ("?" + decodedQuery))),
-					request.getHeaderString("x-amz-content-sha256"));
-
-			final String signature = signer.getSignature();
-
-			return signature;
-		} catch (SigningException e) {
-			throw InvalidAuthException.malformedSignature();
+			return gen.computeSignature();
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}

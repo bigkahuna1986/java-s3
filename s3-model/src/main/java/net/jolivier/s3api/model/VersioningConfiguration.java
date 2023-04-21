@@ -7,7 +7,6 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 public class VersioningConfiguration {
 
 	private static final String ENABLED = "Enabled";
-	private static final String DISABLED = "Disabled";
 	private static final String SUSPENDED = "Suspended";
 
 	private String _status;
@@ -15,13 +14,13 @@ public class VersioningConfiguration {
 
 	public VersioningConfiguration() {
 	}
+	
+	public static VersioningConfiguration unversioned() {
+		return new VersioningConfiguration(null);
+	}
 
 	public static VersioningConfiguration enabled() {
 		return new VersioningConfiguration(ENABLED);
-	}
-
-	public static VersioningConfiguration disabled() {
-		return new VersioningConfiguration(DISABLED);
 	}
 
 	public static VersioningConfiguration suspended() {
@@ -52,10 +51,6 @@ public class VersioningConfiguration {
 
 	public boolean isEnabled() {
 		return _status.equals(ENABLED);
-	}
-
-	public boolean isDisabled() {
-		return _status.equals(DISABLED);
 	}
 
 	public boolean isSuspended() {

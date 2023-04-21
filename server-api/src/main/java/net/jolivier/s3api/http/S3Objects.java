@@ -278,7 +278,7 @@ public class S3Objects {
 				return Response.ok(ApiPoint.data().getBucketVersioning(ctx, ctx.bucket())).build();
 
 			if (query.containsKey("publicAccessBlock"))
-				return Response.ok(ApiPoint.data().getPublicAccessBlock(ctx, ctx.bucket())).build();
+				throw NotImplementedException.notImplemented(ctx, "Block public access settings are not implemented");
 
 			if (query.containsKey("versions"))
 				return Response.ok(ApiPoint.data().listObjectVersions(ctx, ctx.bucket(), ofNullable(delimiter),

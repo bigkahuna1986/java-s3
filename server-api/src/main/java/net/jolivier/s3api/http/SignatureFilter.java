@@ -56,8 +56,6 @@ public class SignatureFilter implements ContainerRequestFilter {
 
 		final String bucket = (String) ctx.getProperty("bucket");
 
-		boolean isPublic = false;
-
 		if (Strings.isNullOrEmpty(bucket) && !Strings.isNullOrEmpty(ctx.getUriInfo().getPath()))
 			throw RequestFailedException.invalidRequest("NoBucket", "No bucket provided");
 
@@ -69,28 +67,21 @@ public class SignatureFilter implements ContainerRequestFilter {
 			if (!"PUT".equals(ctx.getMethod()) && !ApiPoint.data().bucketExists(bucket)) {
 				throw NoSuchBucketException.noSuchBucket(bucket);
 			}
-
-			isPublic = ApiPoint.data().isBucketPublic(bucket);
 		}
 
 		// Fetch authorization header
-		if (!isPublic) {
-			final AwsSigV4 sigv4 = (AwsSigV4) ctx.getProperty("sigv4");
-			if (sigv4 == null) {
-				throw InvalidAuthException.invalidAuth();
-			}
-
-			final User user = ApiPoint.auth().user(sigv4.accessKeyId());
-
-			if (!Strings.isNullOrEmpty(bucket))
-				ctx.setProperty(CTX_KEY,
-						S3Context.bucketRestricted(requestId, bucket, user, ApiPoint.auth().findOwner(user)));
-			else
-				ctx.setProperty(CTX_KEY, S3Context.noBucket(requestId, user, ApiPoint.auth().findOwner(user)));
-
-		} else {
-			ctx.setProperty(CTX_KEY, S3Context.bucketPublic(requestId, bucket, ApiPoint.auth().findOwner(bucket)));
+		final AwsSigV4 sigv4 = (AwsSigV4) ctx.getProperty("sigv4");
+		if (sigv4 == null) {
+			throw InvalidAuthException.invalidAuth();
 		}
+
+		final User user = ApiPoint.auth().user(sigv4.accessKeyId());
+
+		if (!Strings.isNullOrEmpty(bucket))
+			ctx.setProperty(CTX_KEY,
+					S3Context.bucketRestricted(requestId, bucket, user, ApiPoint.auth().findOwner(user)));
+		else
+			ctx.setProperty(CTX_KEY, S3Context.noBucket(requestId, user, ApiPoint.auth().findOwner(user)));
 	}
 
 }

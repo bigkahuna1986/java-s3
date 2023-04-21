@@ -14,7 +14,6 @@ import net.jolivier.s3api.model.ListAllMyBucketsResult;
 import net.jolivier.s3api.model.ListBucketResult;
 import net.jolivier.s3api.model.ListBucketResultV2;
 import net.jolivier.s3api.model.ListVersionsResult;
-import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
@@ -43,22 +42,6 @@ public interface S3DataStore {
 	 * @return true if bucket exists, false otherwise.
 	 */
 	public boolean bucketExists(String bucket);
-
-	/**
-	 * Checks if the given bucket is public, only used internally.
-	 * 
-	 * @param bucket
-	 * @return true if the bucket is public, false otherwise.
-	 */
-	public boolean isBucketPublic(String bucket);
-
-	/**
-	 * Internal method for getting the public access block config.
-	 * 
-	 * @param bucket
-	 * @return
-	 */
-	public Optional<PublicAccessBlockConfiguration> internalPublicAccessBlock(String bucket);
 
 	/**
 	 * Same as {@link#bucketExists(String)} but is allowed to throw S3Exceptions
@@ -118,34 +101,6 @@ public interface S3DataStore {
 	 * @return
 	 */
 	public boolean putBucketVersioning(S3Context ctx, String bucket, VersioningConfiguration config);
-
-	/**
-	 * Gets the public access block config
-	 * 
-	 * @param ctx
-	 * @param bucket
-	 * @return The public access block config
-	 */
-	public PublicAccessBlockConfiguration getPublicAccessBlock(S3Context ctx, String bucket);
-
-	/**
-	 * Sets the public access block config.
-	 * 
-	 * @param ctx
-	 * @param bucket
-	 * @param config
-	 * @return
-	 */
-	public boolean putPublicAccessBlock(S3Context ctx, String bucket, PublicAccessBlockConfiguration config);
-
-	/**
-	 * Deletes a public access block config.
-	 * 
-	 * @param ctx
-	 * @param bucket
-	 * @return
-	 */
-	public boolean deletePublicAccessBlock(S3Context ctx, String bucket);
 
 	/**
 	 * Gets an object by bucket, key, and optionally versionId.

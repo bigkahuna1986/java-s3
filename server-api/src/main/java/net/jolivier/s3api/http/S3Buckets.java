@@ -15,11 +15,11 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import net.jolivier.s3api.auth.S3Context;
+import net.jolivier.s3api.exception.ConflictException;
 import net.jolivier.s3api.exception.NotImplementedException;
 import net.jolivier.s3api.exception.RequestFailedException;
 import net.jolivier.s3api.exception.S3Exception;
 import net.jolivier.s3api.model.CreateBucketConfiguration;
-import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.VersioningConfiguration;
 
 /**
@@ -30,6 +30,7 @@ import net.jolivier.s3api.model.VersioningConfiguration;
  */
 @Path("/")
 public class S3Buckets {
+
 	/**
 	 * Head bucket, returns 200 or 404.
 	 * 
@@ -67,13 +68,7 @@ public class S3Buckets {
 		}
 
 		if (query.containsKey("publicAccessBlock")) {
-			PublicAccessBlockConfiguration config = RequestUtils.readJaxbEntity(PublicAccessBlockConfiguration.class,
-					req.getEntityStream());
-
-			if (!ApiPoint.data().putPublicAccessBlock(ctx, ctx.bucket(), config))
-				throw RequestFailedException.invalidArgument(ctx, "Unable to put bucket PublicAccessBlock");
-
-			return Response.ok().build();
+			throw NotImplementedException.notImplemented(ctx, "Block public access settings are not implemented");
 		}
 
 		if (query.containsKey("lifecycle") || query.containsKey("object-lock")) {
@@ -99,7 +94,7 @@ public class S3Buckets {
 			location = config.getLocation();
 		}
 		if (!ApiPoint.data().createBucket(ctx, ctx.bucket(), location))
-			throw RequestFailedException.invalidArgument(ctx, "Unable to create bucket");
+			throw ConflictException.bucketAlreadyExists(ctx);
 
 		return Response.ok().build();
 	}
@@ -113,12 +108,8 @@ public class S3Buckets {
 	@DELETE
 	public Response deleteBucket(@Context S3Context ctx, @Context UriInfo uriInfo) {
 
-		if (uriInfo.getQueryParameters().containsKey("publicAccessBlock")) {
-			if (!ApiPoint.data().deletePublicAccessBlock(ctx, ctx.bucket()))
-				throw RequestFailedException.invalidArgument(ctx, "Unable to delete bucket PublicAccessBlock");
-
-			return Response.noContent().build();
-		}
+		if (uriInfo.getQueryParameters().containsKey("publicAccessBlock"))
+			throw NotImplementedException.notImplemented(ctx, "Block public access settings are not implemented");
 
 		if (!ApiPoint.data().deleteBucket(ctx, ctx.bucket()))
 			throw RequestFailedException.invalidArgument(ctx, "Unable to delete bucket");

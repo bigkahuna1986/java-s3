@@ -10,4 +10,9 @@ public class ConflictException {
 		return new S3Exception(ctx, HttpURLConnection.HTTP_CONFLICT, "BucketNotEmpty", ctx.bucket(),
 				"The bucket that you tried to delete is not empty.");
 	}
+	
+	public static S3Exception bucketAlreadyExists(S3Context ctx) {
+		return new S3Exception(ctx, HttpURLConnection.HTTP_CONFLICT, "BucketAlreadyExists", ctx.bucket(),
+				"The bucket already exists.");
+	}
 }

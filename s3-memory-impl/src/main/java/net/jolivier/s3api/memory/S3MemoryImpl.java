@@ -29,7 +29,6 @@ import net.jolivier.s3api.model.ListBucketResult;
 import net.jolivier.s3api.model.ListBucketResultV2;
 import net.jolivier.s3api.model.ListVersionsResult;
 import net.jolivier.s3api.model.Owner;
-import net.jolivier.s3api.model.PublicAccessBlockConfiguration;
 import net.jolivier.s3api.model.PutObjectResult;
 import net.jolivier.s3api.model.User;
 import net.jolivier.s3api.model.VersioningConfiguration;
@@ -179,40 +178,10 @@ public enum S3MemoryImpl implements S3DataStore, S3AuthStore {
 	}
 
 	@Override
-	public boolean isBucketPublic(String bucket) {
-		return false;
-	}
-
-	@Override
 	public ListAllMyBucketsResult listBuckets(S3Context ctx) {
 		List<Bucket> buckets = BUCKETS.values().stream().filter(ob -> ob.owner().getId().equals(ctx.owner().getId()))
 				.map(b -> new Bucket(b.name(), b.created())).collect(Collectors.toList());
 		return new ListAllMyBucketsResult(buckets, ctx.owner());
-	}
-
-	// Public access blocks not supported on this implementation
-	@Override
-	public Optional<PublicAccessBlockConfiguration> internalPublicAccessBlock(String bucket) {
-		IBucket iBucket = BUCKETS.get(bucket);
-		if (iBucket != null)
-			return iBucket.internalPublicAccessBlock();
-
-		return Optional.empty();
-	}
-
-	@Override
-	public PublicAccessBlockConfiguration getPublicAccessBlock(S3Context ctx, String bucket) {
-		return bucket(ctx, bucket).getPublicAccessBlock(ctx);
-	}
-
-	@Override
-	public boolean putPublicAccessBlock(S3Context ctx, String bucket, PublicAccessBlockConfiguration config) {
-		return bucket(ctx, bucket).putPublicAccessBlock(ctx, config);
-	}
-
-	@Override
-	public boolean deletePublicAccessBlock(S3Context ctx, String bucket) {
-		return bucket(ctx, bucket).deletePublicAccessBlock(ctx);
 	}
 
 	@Override
