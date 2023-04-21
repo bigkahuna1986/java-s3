@@ -44,7 +44,7 @@ java {
             release(MavenPublication) {
                 groupId = 'net.jolivier'
                 artifactId = project.name
-                version = '0.5'
+                version = '0.6'
 
                 from components.java
                 jar.preserveFileTimestamps = false
